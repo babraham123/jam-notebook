@@ -17,7 +17,7 @@ export function Button({ name, onClick, enabled }: Props) {
     <AutoLayout
       verticalAlignItems="center"
       padding={metrics.buttonPadding}
-      fill={colors[name]}
+      fill={enabled ? colors[name] : colors.disabled}
       cornerRadius={metrics.cornerRadius}
       stroke={colors.textButton}
       strokeWidth={2}
@@ -31,13 +31,8 @@ export function Button({ name, onClick, enabled }: Props) {
       }}
       onClick={onClickWrapper}
     >
-      <SVG src={icons[name]} />
-      <Text
-        fill={enabled ? colors[name] : colors.disabled}
-        horizontalAlignText="center"
-      >
-        {name}
-      </Text>
+      <SVG src={icons[name]} width={metrics.iconWidth} height={metrics.iconHeight} />
+      <Text horizontalAlignText="center">{name}</Text>
     </AutoLayout>
   );
 }

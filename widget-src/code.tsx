@@ -1,7 +1,7 @@
 // This widget will open an Iframe window with buttons to show a toast message and close the window.
 
 const { widget } = figma;
-const { AutoLayout, Text, Rectangle, useSyncedState, useWidgetId, useEffect } =
+const { AutoLayout, Text, Rectangle, useSyncedState, useWidgetId, useEffect, usePropertyMenu } =
   widget;
 
 import * as FigmaSelector from "./vendor/figma-selector";
@@ -59,7 +59,7 @@ function Widget() {
     }
   }
 
-  function addMsgListener() {
+  useEffect(() => {
     figma.ui.onmessage = async (event) => {
       if (!event?.data?.type) {
         return;
@@ -67,7 +67,7 @@ function Widget() {
       const msg = event.data as IFrameMessage;
       await handleMessage(msg);
     };
-  }
+  });
 
   function isReadyHandler(
     msg: IFrameMessage
@@ -132,14 +132,39 @@ function Widget() {
     }
   }
 
-  function handlePlayBtn(): void {
+  function handlePlayBtn(): Promise<void> {
     setResultStatus("RUNNING");
-    addMsgListener();
-    figma.showUI(__html__, {
-      visible: false,
-      title: "Code runner",
-    });
+    return new Promise((resolve) => {
+      figma.showUI(__html__, {
+        visible: false,
+        title: "Code runner",
+      });
+    })
   }
+
+  usePropertyMenu(
+    [
+     {
+        itemType: 'action',
+        tooltip: 'Play',
+        propertyName: 'play',
+      },
+      {
+        itemType: 'action',
+        tooltip: 'Pause',
+        propertyName: 'pause',
+      },
+    ],
+    ({propertyName, propertyValue}) => {
+      if (propertyName === "play") {
+        if (resultStatus !== "RUNNING") {
+          return handlePlayBtn();
+        }
+      } else if (propertyName === "pause") {
+        return closeIFrame();
+      }
+    },
+  );
 
   return (
     <AutoLayout
@@ -149,17 +174,15 @@ function Widget() {
       stroke={colors.stroke}
       strokeWidth={1}
     >
+      <Text fontSize={32} horizontalAlignText="center">{title}</Text>
+      <Rectangle width="fill-parent" height={1} stroke={colors.stroke} />
       <AutoLayout
+        direction="horizontal"
         padding={metrics.detailPadding}
-        fill={colors.bgDetail}
-        width={metrics.width}
+        width="fill-parent"
         verticalAlignItems="center"
         spacing={metrics.padding}
       >
-        <Text fontSize={32} horizontalAlignText="center">
-          {title}
-        </Text>
-        <Rectangle width="fill-parent" height={1} />
         <Button
           name="play"
           onClick={handlePlayBtn}

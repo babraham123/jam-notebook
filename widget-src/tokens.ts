@@ -19,7 +19,8 @@ export const metrics = {
   cornerRadius: 8,
   resultSpacing: 64,
 
-  importDotsWidth: 6,
+  iconWidth: 60,
+  iconHeight: 75,
 };
 
 export const colors = {
