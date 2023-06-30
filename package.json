@@ -1,0 +1,47 @@
+{
+  "name": "widget-template",
+  "version": "1.0.0",
+  "description": "WidgetTemplate",
+  "scripts": {
+    "test": "npm run tsc && npm run build",
+    "format": "prettier --write .",
+    "tsc": "npm run tsc:main && npm run tsc:ui",
+    "tsc:main": "tsc --noEmit -p widget-src",
+    "tsc:ui": "tsc --noEmit -p ui-src",
+    "tsc:watch": "concurrently -n widget,iframe \"npm run tsc:main -- --watch --preserveWatchOutput\" \"npm run tsc:ui -- --watch --preserveWatchOutput\"",
+    "build": "npm run build:ui && npm run build:main",
+    "build:production": "npm run build:ui && npm run build:main -- --minify",
+    "build:main": "esbuild widget-src/code.tsx --bundle --outfile=dist/code.js",
+    "build:ui": "npx vite build --minify esbuild --emptyOutDir=false",
+    "build:watch": "concurrently -n widget,iframe \"npm run build:main -- --watch\" \"npm run build:ui -- --watch\"",
+    "dev": "concurrently -n tsc,build,vite 'npm:tsc:watch' 'npm:build:watch' 'npx vite'"
+  },
+  "author": "Bereket Abraham <babraham42@gmail.com>",
+  "license": "MIT License",
+  "dependencies": {
+    "blob-util": "^2.0.2",
+    "css-selector-parser": "^1.4.1",
+    "csv-parse": "^5.3.3",
+    "csv-stringify": "^6.2.3",
+    "dom-to-image": "^2.6.0",
+    "events": "^3.3.0",
+    "html2canvas": "^1.4.1",
+    "js-beautify":"^1.14.8",
+    "parse-es-import": "github:babraham123/parse-es-import#de79796aa697d196c4f3c5eb8a268457a7958a10",
+    "pretty-format": "^28.1.1"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "@figma/widget-typings": "*",
+    "@types/dom-to-image": "^2.6.4",
+    "@types/events": "^3.0.0",
+    "@types/js-beautify": "^1.13.3",
+    "@types/node": "^16.17.1",
+    "concurrently": "^7.2.1",
+    "esbuild": "*",
+    "prettier": "^2.3.2",
+    "typescript": "*",
+    "vite": "^2.9.9",
+    "vite-plugin-singlefile": "^0.13.5"
+  }
+}
