@@ -13,7 +13,11 @@ export function setResult(res: Result) {
   // Write to shared plugin data
 }
 
-export async function showResult(widgetId: string, code: string, type: CodeTypes) {
+export async function showResult(
+  widgetId: string,
+  code: string,
+  type: CodeTypes
+) {
   const selection = figma.getNodeById(widgetId);
   if (!selection || selection.type !== "WIDGET") {
     return;

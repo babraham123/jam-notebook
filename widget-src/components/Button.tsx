@@ -21,7 +21,7 @@ export function Button({ name, onClick, enabled }: Props) {
       strokeWidth={2}
       hoverStyle={{ stroke: colors.stroke }} // color?
       effect={{
-        type: 'drop-shadow',
+        type: "drop-shadow",
         color: { r: 0, g: 0, b: 0, a: 0.2 },
         offset: { x: 0, y: 0 },
         blur: 2,
@@ -29,9 +29,9 @@ export function Button({ name, onClick, enabled }: Props) {
       }}
       onClick={onClickWrapper}
     >
-      <SVG src={icons[name]}/>
+      <SVG src={icons[name]} />
       <Text
-        fill={ enabled ? colors[name] : colors.disabled }
+        fill={enabled ? colors[name] : colors.disabled}
         horizontalAlignText="center"
       >
         {name}

@@ -11,8 +11,6 @@
   "capabilities": [],
   "enableProposedApi": false,
   "networkAccess": {
-    "allowedDomains": [
-      "none"
-    ]
+    "allowedDomains": ["none"]
   }
 }

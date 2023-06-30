@@ -1,7 +1,7 @@
-import { Obj } from '../shared/types';
-import parse from 'parse-es-import';
-import { parse as parseCSV } from 'csv-parse/sync';
-import { js as jsBeautify } from 'js-beautify';
+import { Obj } from "../shared/types";
+import parse from "parse-es-import";
+import { parse as parseCSV } from "csv-parse/sync";
+import { js as jsBeautify } from "js-beautify";
 
 // This lets us access the execution environment from the error handler.
 export class WrappedError extends Error {
@@ -17,44 +17,44 @@ export class WrappedError extends Error {
 
 function formatAsCode(obj: Obj): string {
   switch (obj.type) {
-    case 'TEXT': // string
+    case "TEXT": // string
       return `'${obj.data}'`;
-    case 'JSON': // object
+    case "JSON": // object
       return obj.data;
-    case 'CSV': // array of arrays
+    case "CSV": // array of arrays
       const records = parseCSV(obj.data, { skip_empty_lines: true });
       return JSON.stringify(records);
-    case 'SVG': // XMLDocument of a DOM Element
+    case "SVG": // XMLDocument of a DOM Element
       return `new DOMParser().parseFromString('${obj.data}', 'image/svg+xml')`;
-    case 'BINARY': // Buffer
+    case "BINARY": // Buffer
       return `Buffer.from('${obj.data}', 'base64')`;
-    case 'ERROR':
+    case "ERROR":
       throw new Error(`Trying to insert error into code: ${obj.data}`);
-    case 'UNDEFINED':
-      return 'undefined';
+    case "UNDEFINED":
+      return "undefined";
     default:
-      return '';
+      return "";
   }
 }
 
 function parseInput(obj: Obj): any {
   switch (obj.type) {
-    case 'TEXT':
+    case "TEXT":
       return obj.data;
-    case 'JSON':
+    case "JSON":
       return JSON.parse(obj.data);
-    case 'CSV': // array of arrays
+    case "CSV": // array of arrays
       return parseCSV(obj.data, { skip_empty_lines: true });
-    case 'SVG': // XMLDocument of a DOM SVGSVGElement
-      return new DOMParser().parseFromString(obj.data, 'image/svg+xml');
-    case 'BINARY': // Buffer
-      return Buffer.from(obj.data, 'base64');
-    case 'ERROR':
+    case "SVG": // XMLDocument of a DOM SVGSVGElement
+      return new DOMParser().parseFromString(obj.data, "image/svg+xml");
+    case "BINARY": // Buffer
+      return Buffer.from(obj.data, "base64");
+    case "ERROR":
       return new Error(obj.data);
-    case 'UNDEFINED':
+    case "UNDEFINED":
       return undefined;
     default:
-      return '';
+      return "";
   }
 }
 
@@ -66,22 +66,32 @@ function replaceImports(code: string): string {
   for (const importObj of imports) {
     const importCode = code.slice(importObj.startIndex, importObj.endIndex);
     const pkgName = importObj.moduleName;
-    if (pkgName?.startsWith('https://')) {
+    if (pkgName?.startsWith("https://")) {
       continue;
     }
-    if (pkgName.includes('/') || !pkgName) {
-      throw new Error(`Only valid package imports are allowed. Invalid code:\n${importCode}`);
+    if (pkgName.includes("/") || !pkgName) {
+      throw new Error(
+        `Only valid package imports are allowed. Invalid code:\n${importCode}`
+      );
     }
     var pkgIndex = importCode.lastIndexOf(pkgName);
     if (pkgIndex < 0) {
-      throw new Error(`Import pkg name not found. Invalid code:\n${importCode}`);
-    };
+      throw new Error(
+        `Import pkg name not found. Invalid code:\n${importCode}`
+      );
+    }
 
     // Insert new pkg name into import. Skypack imports enable the NPM module magic.
     const newPkg = `https://cdn.skypack.dev/${pkgName}`;
-    const newImportCode = importCode.slice(0, pkgIndex) + newPkg + importCode.slice(pkgIndex + pkgName.length);
+    const newImportCode =
+      importCode.slice(0, pkgIndex) +
+      newPkg +
+      importCode.slice(pkgIndex + pkgName.length);
     // Insert new import code into larger code.
-    newCode = newCode.slice(0, importObj.startIndex + offset) + newImportCode + newCode.slice(importObj.endIndex + offset);
+    newCode =
+      newCode.slice(0, importObj.startIndex + offset) +
+      newImportCode +
+      newCode.slice(importObj.endIndex + offset);
     offset += newImportCode.length - importCode.length;
   }
   return newCode;
@@ -90,7 +100,7 @@ function replaceImports(code: string): string {
 export async function runJSScript(
   code: string,
   inputs: Obj[],
-  std: any,
+  std: any
 ): Promise<Obj> {
   const figma = Object.freeze({
     notebook: Object.freeze(std),
@@ -108,7 +118,7 @@ export async function runJSScript(
     ${runFunc}
     return await run(inputs);
 `;
-  const func = new Function('figma', 'inputs', script);
+  const func = new Function("figma", "inputs", script);
 
   try {
     return await func(figma, parsedInputs, script);
@@ -121,7 +131,7 @@ export async function runJSScript(
 export async function testJSScript(
   code: string,
   testCode: string,
-  std: any,
+  std: any
 ): Promise<Obj> {
   const figma = Object.freeze({
     notebook: Object.freeze(std),
@@ -135,7 +145,7 @@ export async function testJSScript(
     ${testFunc}
     return await test();
 `;
-  const func = new Function('figma', script);
+  const func = new Function("figma", script);
 
   try {
     return await func(figma, script);
@@ -145,9 +155,7 @@ export async function testJSScript(
   }
 }
 
-export function formatJSScript(
-  code: string,
-): string {
+export function formatJSScript(code: string): string {
   return jsBeautify(code, {
     indent_size: 2,
     preserve_newlines: false,

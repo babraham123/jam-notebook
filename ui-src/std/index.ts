@@ -4,7 +4,7 @@
  */
 
 import { svgToString as stringifySVG } from "../utils";
-import { stringify as stringifyCSV } from 'csv-stringify/sync';
+import { stringify as stringifyCSV } from "csv-stringify/sync";
 import { IFrameMessage } from "../../shared/types";
 import { PLUGIN_ID } from "../../shared/constants";
 
@@ -43,13 +43,19 @@ function queryNodes(
 
 // Converts an Uint8Array, ArrayBuffer, Buffer or string to a base64 string. Encoding indicates
 // the string's encoding, defaults to 'binary'.
-function stringifyBytes(data: Uint8Array | ArrayBuffer | Buffer | string, encoding?: string): string {
+function stringifyBytes(
+  data: Uint8Array | ArrayBuffer | Buffer | string,
+  encoding?: string
+): string {
   if (data instanceof Uint8Array) {
     // Uint8Array -> ArrayBuffer
-    data = data.buffer.slice(data.byteOffset, data.byteLength + data.byteOffset);
+    data = data.buffer.slice(
+      data.byteOffset,
+      data.byteLength + data.byteOffset
+    );
   }
   if (!encoding) {
-    encoding = 'binary';
+    encoding = "binary";
   }
   return Buffer.from(data, encoding).toString("base64");
 }

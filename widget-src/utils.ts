@@ -1,12 +1,12 @@
-import { print as subPrint, printErr as subPrintErr } from '../shared/utils';
+import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
 import { metrics } from "./tokens";
 
 export function printErr(msg: string) {
-  subPrintErr(`widget: ${msg}`)
+  subPrintErr(`widget: ${msg}`);
 }
 
 export function print(msg: string) {
-  subPrint(`widget: ${msg}`)
+  subPrint(`widget: ${msg}`);
 }
 
 async function addAdjacentCodeNotebook(widgetId: string) {

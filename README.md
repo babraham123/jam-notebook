@@ -1,5 +1,5 @@
-Fig Notebook
-===
+# Fig Notebook
+
 Javascript code notebooks in Figjam.
 
 I build upon the work done by previous widgets, mainly Michael Bullington's Code Notebooks and Michael Feldstein's Play button.
@@ -7,6 +7,7 @@ I build upon the work done by previous widgets, mainly Michael Bullington's Code
 ## Quick start
 
 Open up the widget in a FigJam file, press the `edit` button and try the following sample code:
+
 ```
 // imports
 
@@ -23,6 +24,7 @@ async function run(inputs) {
 ```
 
 Test code:
+
 ```
 // imports
 
@@ -55,16 +57,16 @@ async function test() {
 ## Getting started
 
 ### One-time setup
+
 1. Make a copy of this folder
 2. Update manifest.json, package.json and package-lock.json where it says `WidgetTemplate`
 3. Install the required dependencies `npm ci`
 
-
 ### Importing your widget
+
 1. "Import widget from manifest"
 2. Build code `npm run build`
 3. Choose your manifest
-
 
 ## Development
 
@@ -75,19 +77,20 @@ npm run dev
 ```
 
 This command starts the follow in watch mode:
+
 1. typechecking for widget-src & ui-src
 2. bundling for widget-src & ui-src
 3. starts a vite dev server that serves ui-src/index.html at localhost:3000
 
 ## Other scripts
 
-| script                   | description                                                             |
-| ------------------------ | ----------------------------------------------------------------------- |
-| npm run build            | one-off full build of both the iframe and widget                        |
-| npm run build:production | one-off full production (minified) build of both the iframe and widget  |
-| npm run build:main       | one-off build of the widget code                                        |
-| npm run build:ui         | one-off build of the iframe code                                        |
-| npm run tsc              | typecheck both the iframe and widget                                    |
+| script                   | description                                                            |
+| ------------------------ | ---------------------------------------------------------------------- |
+| npm run build            | one-off full build of both the iframe and widget                       |
+| npm run build:production | one-off full production (minified) build of both the iframe and widget |
+| npm run build:main       | one-off build of the widget code                                       |
+| npm run build:ui         | one-off build of the iframe code                                       |
+| npm run tsc              | typecheck both the iframe and widget                                   |
 
 # Issues / Bugs
 

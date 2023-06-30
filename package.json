@@ -26,7 +26,7 @@
     "dom-to-image": "^2.6.0",
     "events": "^3.3.0",
     "html2canvas": "^1.4.1",
-    "js-beautify":"^1.14.8",
+    "js-beautify": "^1.14.8",
     "parse-es-import": "github:babraham123/parse-es-import#de79796aa697d196c4f3c5eb8a268457a7958a10",
     "pretty-format": "^28.1.1"
   },
@@ -41,7 +41,7 @@
     "esbuild": "*",
     "prettier": "^2.3.2",
     "typescript": "*",
-    "vite": "^2.9.9",
+    "vite": "^4.3.9",
     "vite-plugin-singlefile": "^0.13.5"
   }
 }

@@ -1,17 +1,14 @@
-import { Obj } from '../shared/types';
-import { printErr } from './utils';
-import { EMPTY_OBJ } from '../shared/constants';
+import { Obj } from "../shared/types";
+import { printErr } from "./utils";
+import { EMPTY_OBJ } from "../shared/constants";
 // import { loadPyodide } from 'https://pyodide-cdn2.iodide.io/v0.20.0/full/pyodide.mjs';
 
 // Pyodide
 // Or https://openerp-web-v7.readthedocs.io/en/stable/
 
-export async function runPYScript(
-    code: string,
-    inputs: Obj[],
-  ): Promise<Obj> {
-    printErr('TODO: Implement');
-    return EMPTY_OBJ;
+export async function runPYScript(code: string, inputs: Obj[]): Promise<Obj> {
+  printErr("TODO: Implement");
+  return EMPTY_OBJ;
 
   // TODO: Will also need custom bundling to preload cython dependent libraries (numpy, etc) and use
   // micropip to install pure python libraries.
@@ -28,9 +25,9 @@ export async function runPYScript(
 
 export async function testPYScript(
   code: string,
-  testCode: string,
+  testCode: string
 ): Promise<Obj> {
-  printErr('TODO: Implement');
+  printErr("TODO: Implement");
   return EMPTY_OBJ;
 
   // Will also need custom bundling to preload cython dependent libraries (numpy, etc) and use
@@ -52,7 +49,7 @@ export async function testPYScript(
 }
 
 export function formatPYScript(code: string): string {
-  printErr('TODO: Implement');
+  printErr("TODO: Implement");
   return code;
 
   // TODO: use https://github.com/psf/black

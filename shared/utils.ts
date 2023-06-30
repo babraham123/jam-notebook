@@ -1,8 +1,7 @@
-
 export function printErr(msg: string) {
-  console.error(`fig: ${msg}`)
+  console.error(`fig: ${msg}`);
 }
 
 export function print(msg: string) {
-  console.log(`fig: ${msg}`)
+  console.log(`fig: ${msg}`);
 }
