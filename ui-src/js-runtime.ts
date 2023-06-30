@@ -124,7 +124,7 @@ export async function runJSScript(
     return await func(figma, parsedInputs, script);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
-    throw new WrappedError(err, func);
+    throw new WrappedError(err as Error, func);
   }
 }
 
@@ -151,7 +151,7 @@ export async function testJSScript(
     return await func(figma, script);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
-    throw new WrappedError(err, func);
+    throw new WrappedError(err as Error, func);
   }
 }
 

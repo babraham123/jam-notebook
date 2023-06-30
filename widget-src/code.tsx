@@ -73,7 +73,7 @@ function Widget() {
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
     // TODO: send app state, code, inputs, etc
-    return undefined;
+    return Promise.resolve(undefined);
   }
 
   function saveHandler(msg: IFrameMessage): Promise<IFrameMessage | undefined> {
@@ -93,7 +93,7 @@ function Widget() {
         setResultStatus("SUCCESS");
       }
     }
-    return undefined;
+    return Promise.resolve(undefined);;
   }
 
   function queryHandler(
@@ -105,7 +105,7 @@ function Widget() {
     let serializedNodes: any[] = [];
     if (msg?.nodeQuery) {
       const { selector, id } = msg.nodeQuery;
-      const rootNode = !id ? figma.currentPage : figma.getNodeById(id);
+      const rootNode = !id ? figma.currentPage : figma.getNodeById(id) ?? undefined;
       const nodes = FigmaSelector.parse(selector, rootNode);
       serializedNodes = nodes.map((node) => serializeNode(node));
     }
@@ -120,7 +120,7 @@ function Widget() {
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
     closeIFrame();
-    return undefined;
+    return Promise.resolve(undefined);;
   }
 
   function closeIFrame(): void {

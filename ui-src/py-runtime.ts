@@ -18,7 +18,7 @@ export async function runPYScript(code: string, inputs: Obj[]): Promise<Obj> {
     // return await pyodide.runPythonAsync(code);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
-    err.message = `Error in python code: ${err.message}`;
+    // err.message = `Error in python code: ${err.message}`;
     throw err;
   }
 }
@@ -43,7 +43,7 @@ export async function testPYScript(
     // return await pyodide.runPythonAsync(wrappedCode);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
-    err.message = `Error in python code: ${err.message}`;
+    // err.message = `Error in python code: ${err.message}`;
     throw err;
   }
 }

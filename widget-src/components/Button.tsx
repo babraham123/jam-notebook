@@ -3,8 +3,10 @@ import { icons } from "../../shared/icons";
 
 const { AutoLayout, SVG, Text } = figma.widget;
 
+type ButtonName = "play" | "pause" | "format";
+
 interface Props {
-  name: string;
+  name: ButtonName;
   onClick?: (event: WidgetClickEvent) => Promise<void> | void;
   enabled: boolean;
 }

@@ -14,22 +14,25 @@ function queryNodes(
   rootNode: { id: string } | string,
   selector?: string
 ): Promise<any[]> {
-  if (!selector) {
+  let id: string | undefined;
+  if (selector) {
+    id = (rootNode as { id: string } | null)?.id;
+  } else {
     selector = rootNode as string;
-    rootNode = undefined;
+    // Don't set id, so that we query the whole document
   }
-  const id = (rootNode as { id: string } | null)?.id;
 
   return new Promise((resolve) => {
     function callback(event: MessageEvent) {
       if (event?.data?.type === "QUERY") {
         const msg = event.data as IFrameMessage;
-        resolve(msg.nodes);
+        resolve(msg.nodes ?? []);
       }
       window.removeEventListener("message", callback);
     }
 
     window.addEventListener("message", callback);
+    selector = selector ?? ""; // Just to make TS happy
     const queryMsg: IFrameMessage = {
       type: "QUERY",
       nodeQuery: {
@@ -45,8 +48,12 @@ function queryNodes(
 // the string's encoding, defaults to 'binary'.
 function stringifyBytes(
   data: Uint8Array | ArrayBuffer | Buffer | string,
-  encoding?: string
+  encoding?: BufferEncoding
 ): string {
+  if (!encoding) {
+    encoding = "binary";
+  }
+
   if (data instanceof Uint8Array) {
     // Uint8Array -> ArrayBuffer
     data = data.buffer.slice(
@@ -54,10 +61,11 @@ function stringifyBytes(
       data.byteLength + data.byteOffset
     );
   }
-  if (!encoding) {
-    encoding = "binary";
+  if (typeof data === 'string') {
+    return Buffer.from(data as string, encoding).toString("base64");
+  } else {
+    return Buffer.from(data).toString("base64");
   }
-  return Buffer.from(data, encoding).toString("base64");
 }
 
 export { queryNodes, stringifyCSV, stringifySVG, stringifyBytes };

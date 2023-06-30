@@ -10,13 +10,13 @@ export async function runWasmScript(code: string, inputs: Obj[]): Promise<Obj> {
 
   try {
     const wasmModule = await WebAssembly.instantiate(codeBuffer);
-    const { main } = wasmModule.instance.exports;
+    const main = wasmModule.instance.exports.main as CallableFunction;
 
     const result = main(stringInputs);
     return { type: "TEXT", data: result };
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
-    err.message = `Error in WASM code: ${err.message}`;
+    // err.message = `Error in WASM code: ${err.message}`;
     throw err;
   }
 }

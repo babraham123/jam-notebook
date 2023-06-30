@@ -14,11 +14,11 @@ export function print(msg: string) {
  */
 export function svgToString(svg: Element): string {
   if (svg.nodeName.toLowerCase() !== "svg") {
-    svg = svg.querySelector("svg");
-  }
-
-  if (!svg) {
-    throw new Error("Non-SVG elements currently unsupported.");
+    const newSvg = svg.querySelector("svg");
+    if (!newSvg) {
+      throw new Error("Non-SVG elements currently unsupported.");
+    }
+    svg = newSvg;
   }
 
   const svgContainer = svg.cloneNode(true) as SVGSVGElement;

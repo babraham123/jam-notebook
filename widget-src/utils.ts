@@ -181,7 +181,7 @@ export function serializeNode(
     type: node.type,
   };
 
-  if (!recursive) {
+  if (!recursive && node.parent) {
     data.parent = serializeNode(node.parent, true, true);
   }
 

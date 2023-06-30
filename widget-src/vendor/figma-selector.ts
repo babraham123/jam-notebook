@@ -48,8 +48,11 @@ enum Search {
 }
 
 export function parse(selector: string, rootNode?: BaseNode): SceneNode[] {
+  if (rootNode === undefined) {
+    rootNode = figma.currentPage;
+  }
   const nodes = findSelection(
-    rootNode ?? figma.currentPage,
+    rootNode,
     parseSelector(selector),
     Search.ALL
   );
@@ -86,7 +89,7 @@ function findSelection(
   search: Search
 ): SceneNode[] {
   if (selector.type === "selectors") {
-    return selector.selectors.reduce((acc, ruleset) => {
+    return selector.selectors.reduce((acc: SceneNode[], ruleset: RuleSet) => {
       const nodes = findRuleset(node, ruleset, search);
       return acc.concat(nodes);
     }, [] as SceneNode[]);

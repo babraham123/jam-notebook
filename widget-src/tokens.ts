@@ -44,7 +44,7 @@ export const colors = {
 
   play: "#00B268",
   pause: "#F24822",
-  edit: "#0D99FF",
+  format: "#0D99FF",
 };
 
 export interface BadgeStyle {
@@ -53,19 +53,19 @@ export interface BadgeStyle {
 }
 
 export const badges = {
-  success: <BadgeStyle>{
+  SUCCESS: <BadgeStyle>{
     fill: { r: 27 / 255, g: 196 / 255, b: 125 / 255, a: 0.16 },
     textFill: "#00B268",
   },
-  error: <BadgeStyle>{
+  ERROR: <BadgeStyle>{
     fill: { r: 169 / 255, g: 50 / 255, b: 24 / 255, a: 0.16 },
     textFill: "#F24822",
   },
-  running: <BadgeStyle>{
+  RUNNING: <BadgeStyle>{
     fill: { r: 24 / 255, g: 160 / 255, b: 251 / 255, a: 0.16 },
     textFill: "#0D99FF",
   },
-  editing: <BadgeStyle>{
+  EMPTY: <BadgeStyle>{
     fill: { r: 252 / 255, g: 186 / 255, b: 3 / 255, a: 0.16 },
     textFill: "#FCBA03",
   },
