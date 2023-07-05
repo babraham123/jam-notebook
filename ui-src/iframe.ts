@@ -1,5 +1,4 @@
-import { handleMessage } from "./messages";
-import { PLUGIN_ID } from "../shared/constants";
+import { handleMessage, initiate } from "./messages";
 
 window.onmessage = (event: MessageEvent) => {
   if (!event.data?.type) {
@@ -7,5 +6,5 @@ window.onmessage = (event: MessageEvent) => {
   }
   handleMessage(event.data);
 };
-// Send 'ready' msg to the plugin.
-parent.postMessage({ type: "INITIATE" }, PLUGIN_ID);
+
+initiate();

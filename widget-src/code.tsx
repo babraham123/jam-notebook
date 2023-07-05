@@ -1,102 +1,169 @@
 // This widget will open an Iframe window with buttons to show a toast message and close the window.
 
 const { widget } = figma;
-const { AutoLayout, Text, Rectangle, useSyncedState, useWidgetId, useEffect, usePropertyMenu } =
-  widget;
+const {
+  AutoLayout,
+  Rectangle,
+  Text,
+  useEffect,
+  usePropertyMenu,
+  useStickable,
+  useSyncedState,
+  useWidgetId,
+} = widget;
 
 import * as FigmaSelector from "./vendor/figma-selector";
-import { serializeNode, print, printErr } from "./utils";
+import {
+  print,
+  printErr,
+  extractTitle,
+  adjustAndProcessFrames,
+  addCodeBlock,
+  parseNode,
+  removeOutputs,
+} from "./utils";
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
-import { SUPPORTED_MSGS } from "../shared/constants";
 import { IFrameMessage, CommandType } from "../shared/types";
+import { DEFAULT_CODE, DEFAULT_TITLE } from "../shared/constants";
 
-type ResultStatus = "EMPTY" | "RUNNING" | "SUCCESS" | "ERROR";
+type ResultStatus = "EMPTY" | "RUNNING" | "FORMATTING" | "SUCCESS" | "ERROR";
 
-async function unsupportedHandler(
+async function ignoreHandler(
   msg: IFrameMessage
 ): Promise<IFrameMessage | undefined> {
-  printErr(`In widget, command ${msg.type} is unsupported`);
+  console.log(JSON.stringify(msg));
   return undefined;
 }
 
 function Widget() {
   const widgetId = useWidgetId();
 
-  const [title, setTitle] = useSyncedState<string>("title", "untitled");
+  const [title, setTitle] = useSyncedState<string>("title", DEFAULT_TITLE);
+  const [codeBlockId, setCodeBlockId] = useSyncedState<string>(
+    "codeBlockId",
+    ""
+  );
   // const [inputNodeIds, setInputNodeIds] = useSyncedState<string[]>("inputNodeIds", []);
   const [resultStatus, setResultStatus] = useSyncedState<ResultStatus>(
     "resultStatus",
     "EMPTY"
   );
 
+  useStickable(() => {
+    const notebook = figma.getNodeById(widgetId);
+    if (
+      !notebook ||
+      !("stuckTo" in notebook) ||
+      !notebook.stuckTo ||
+      notebook.stuckTo.type !== "CODE_BLOCK"
+    ) {
+      setCodeBlockId("");
+      return;
+    }
+    setCodeBlockId(notebook.stuckTo.id);
+  });
+
   const HANDLERS: Record<
     CommandType,
     (msg: IFrameMessage) => Promise<IFrameMessage | undefined>
   > = {
     INITIATE: isReadyHandler,
-    RUN: saveHandler,
-    FORMAT: unsupportedHandler,
-    TEST: unsupportedHandler,
+    RUN: runHandler,
+    FORMAT: formatHandler,
     QUERY: queryHandler,
-    SAVE: saveHandler,
-    CLOSE: closeHandler,
+    CLEAR: clearHandler,
+    CREATE: ignoreHandler,
   };
 
-  // Modifies the React component. Response msg is sent to both the headless runner and
-  // the editor, if present.
-  async function handleMessage(msg: IFrameMessage): Promise<void> {
-    if (msg.type in SUPPORTED_MSGS["widget"]) {
-      if (msg.debug) {
-        print(`msg ${msg.type} debug: ${msg.debug}`);
-      }
-      const resp = await HANDLERS[msg.type](msg);
-      if (resp) {
-        figma.ui.postMessage(resp);
-      }
-    } else {
-      await unsupportedHandler(msg);
-    }
-  }
-
   useEffect(() => {
-    figma.ui.onmessage = async (event) => {
+    const handleMsg = async (event: any, props: OnMessageProperties) => {
       if (!event?.data?.type) {
         return;
       }
       const msg = event.data as IFrameMessage;
-      await handleMessage(msg);
+      if (msg.debug) {
+        print(`msg ${msg.type}, origin: ${props.origin}, debug: ${msg.debug}`);
+      }
+      const resp = await HANDLERS[msg.type as CommandType](msg);
+      if (resp) {
+        figma.ui.postMessage(resp);
+      }
     };
+    figma.ui.on("message", handleMsg);
+    return () => figma.ui.off("message", handleMsg);
   });
 
-  function isReadyHandler(
+  async function isReadyHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
-    // TODO: send app state, code, inputs, etc
-    return Promise.resolve(undefined);
+    if (codeBlockId === "") {
+      closeIFrame();
+      figma.notify("Please attached to a code block.");
+      return undefined;
+    }
+    const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
+    if (!block) {
+      closeIFrame();
+      figma.notify("Please attached to a code block.");
+      return undefined;
+    }
+
+    setTitle(extractTitle(block.code));
+    if (resultStatus === "FORMATTING") {
+      return {
+        type: "FORMAT",
+        code: {
+          language: `${block.codeLanguage}`.toLowerCase(),
+          code: block.code,
+        },
+      };
+    } else if (resultStatus === "RUNNING") {
+      const io = await adjustAndProcessFrames(codeBlockId);
+      return {
+        type: "RUN",
+        code: {
+          language: `${block.codeLanguage}`.toLowerCase(),
+          code: block.code,
+        },
+        inputs: io.inputs,
+        outputs: io.outputs,
+      };
+    }
+    closeIFrame();
+    printErr(`Unexpected result status: ${resultStatus}`);
+    return undefined;
   }
 
-  function saveHandler(msg: IFrameMessage): Promise<IFrameMessage | undefined> {
-    if (msg?.code) {
-      // TODO: save
-    }
-    if (msg?.appState) {
-      // TODO: save
-      setTitle(msg.appState.title);
-    }
-    if (msg?.result) {
-      // TODO: save
-      if (msg.result.output.type === "ERROR") {
-        setResultStatus("ERROR");
-        // figma.notify("Notebook error: " + errorLike.message);
-      } else {
-        setResultStatus("SUCCESS");
+  async function formatHandler(
+    msg: IFrameMessage
+  ): Promise<IFrameMessage | undefined> {
+    if (msg?.code && codeBlockId !== "") {
+      const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
+      if (block) {
+        block.code = msg.code.code;
       }
     }
-    return Promise.resolve(undefined);;
+    return undefined;
   }
 
-  function queryHandler(
+  async function runHandler(
+    msg: IFrameMessage
+  ): Promise<IFrameMessage | undefined> {
+    if (msg?.status) {
+      if (msg.status === "SUCCESS") {
+        setResultStatus("SUCCESS");
+      } else {
+        setResultStatus("ERROR");
+        if (msg.error) {
+          figma.notify(msg.error.name + ": " + msg.error.message);
+        }
+      }
+    }
+    return undefined;
+  }
+
+  async function queryHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
     if (msg?.nodes) {
@@ -105,65 +172,97 @@ function Widget() {
     let serializedNodes: any[] = [];
     if (msg?.nodeQuery) {
       const { selector, id } = msg.nodeQuery;
-      const rootNode = !id ? figma.currentPage : figma.getNodeById(id) ?? undefined;
+      const rootNode = !id
+        ? figma.currentPage
+        : figma.getNodeById(id) ?? undefined;
       const nodes = FigmaSelector.parse(selector, rootNode);
-      serializedNodes = nodes.map((node) => serializeNode(node));
+      serializedNodes = nodes.map(async (node) => await parseNode(node));
     }
-    return Promise.resolve({
+    return {
       type: "QUERY",
       nodeQuery: msg.nodeQuery,
       nodes: serializedNodes,
-    });
+    };
   }
 
-  function closeHandler(
+  async function closeHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
     closeIFrame();
-    return Promise.resolve(undefined);;
+    return undefined;
+  }
+
+  async function clearHandler(
+    msg: IFrameMessage
+  ): Promise<IFrameMessage | undefined> {
+    if (codeBlockId === "") {
+      return undefined;
+    }
+    removeOutputs(codeBlockId);
+    return undefined;
   }
 
   function closeIFrame(): void {
     figma.ui.close();
     figma.closePlugin();
-    if (resultStatus === "RUNNING") {
+    if (resultStatus === "RUNNING" || resultStatus === "FORMATTING") {
       // TODO: revert to last result
       setResultStatus("EMPTY");
     }
   }
 
-  function handlePlayBtn(): Promise<void> {
+  async function handlePlayBtn(): Promise<void> {
     setResultStatus("RUNNING");
+    await startIFrame();
+  }
+
+  async function handleFormatBtn(): Promise<void> {
+    setResultStatus("FORMATTING");
+    await startIFrame();
+  }
+
+  async function handleAddBlockBtn(): Promise<void> {
+    await addCodeBlock(widgetId, DEFAULT_CODE.code, DEFAULT_CODE.language);
+  }
+
+  function startIFrame(): Promise<void> {
     return new Promise((resolve) => {
       figma.showUI(__html__, {
         visible: false,
         title: "Code runner",
       });
-    })
+    });
   }
 
   usePropertyMenu(
     [
-     {
-        itemType: 'action',
-        tooltip: 'Play',
-        propertyName: 'play',
+      {
+        itemType: "action",
+        tooltip: "Play",
+        propertyName: "play",
       },
       {
-        itemType: 'action',
-        tooltip: 'Pause',
-        propertyName: 'pause',
+        itemType: "action",
+        tooltip: "Format",
+        propertyName: "format",
+      },
+      {
+        itemType: "action",
+        tooltip: "+",
+        propertyName: "addBlock",
       },
     ],
-    ({propertyName, propertyValue}) => {
+    ({ propertyName, propertyValue }) => {
       if (propertyName === "play") {
         if (resultStatus !== "RUNNING") {
           return handlePlayBtn();
         }
-      } else if (propertyName === "pause") {
-        return closeIFrame();
+      } else if (propertyName === "format") {
+        return handleFormatBtn();
+      } else if (propertyName === "addBlock") {
+        return handleAddBlockBtn();
       }
-    },
+    }
   );
 
   return (
@@ -174,7 +273,9 @@ function Widget() {
       stroke={colors.stroke}
       strokeWidth={1}
     >
-      <Text fontSize={32} horizontalAlignText="center">{title}</Text>
+      <Text fontSize={32} horizontalAlignText="center">
+        {title}
+      </Text>
       <Rectangle width="fill-parent" height={1} stroke={colors.stroke} />
       <AutoLayout
         direction="horizontal"
@@ -183,16 +284,24 @@ function Widget() {
         verticalAlignItems="center"
         spacing={metrics.padding}
       >
-        <Button
-          name="play"
-          onClick={handlePlayBtn}
-          enabled={resultStatus !== "RUNNING"}
-        ></Button>
-        <Button
-          name="pause"
-          onClick={closeIFrame}
-          enabled={resultStatus === "RUNNING"}
-        ></Button>
+        {resultStatus === "RUNNING" ? (
+          <Button name="pause" onClick={closeIFrame} enabled={true}></Button>
+        ) : (
+          <Button
+            name="play"
+            onClick={handlePlayBtn}
+            enabled={resultStatus !== "FORMATTING"}
+          ></Button>
+        )}
+        {resultStatus === "FORMATTING" ? (
+          <Button name="pause" onClick={closeIFrame} enabled={true}></Button>
+        ) : (
+          <Button
+            name="format"
+            onClick={handleFormatBtn}
+            enabled={resultStatus !== "RUNNING"}
+          ></Button>
+        )}
         {resultStatus !== "EMPTY" && (
           <AutoLayout
             padding={metrics.buttonPadding}

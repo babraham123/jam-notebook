@@ -3,10 +3,13 @@
  * 'figma.notebook'.
  */
 
-import { svgToString as stringifySVG } from "../utils";
+import { Buffer } from "buffer";
 import { stringify as stringifyCSV } from "csv-stringify/sync";
-import { IFrameMessage } from "../../shared/types";
+
+import { svgToString as stringifySVG } from "../utils";
+import { IFrameMessage, Obj } from "../../shared/types";
 import { PLUGIN_ID } from "../../shared/constants";
+
 
 function queryNodes(node: { id: string }, selector: string): Promise<any[]>;
 function queryNodes(selector: string): Promise<any[]>;
@@ -61,11 +64,62 @@ function stringifyBytes(
       data.byteLength + data.byteOffset
     );
   }
-  if (typeof data === 'string') {
+  if (typeof data === "string") {
     return Buffer.from(data as string, encoding).toString("base64");
   } else {
     return Buffer.from(data).toString("base64");
   }
 }
 
-export { queryNodes, stringifyCSV, stringifySVG, stringifyBytes };
+function storeAny(key: string, data: any) {
+  let obj: Obj;
+  if (
+    data instanceof Uint8Array ||
+    data instanceof ArrayBuffer ||
+    data instanceof Buffer
+  ) {
+    obj = {
+      type: "BINARY",
+      data: stringifyBytes(data),
+    };
+  } else if (typeof data === "string") {
+    obj = {
+      type: "TEXT",
+      data,
+    };
+  } else if (data instanceof Error) {
+    obj = {
+      type: "ERROR",
+      data: JSON.stringify(data),
+    };
+  } else if (data instanceof Element || data instanceof SVGSVGElement) {
+    obj = {
+      type: "SVG",
+      data: stringifySVG(data as Element),
+    };
+  } else if (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    Array.isArray(data[0]) &&
+    data[0].length > 0 &&
+    typeof data[0][0] === "number"
+  ) {
+    obj = {
+      type: "CSV",
+      data: stringifyCSV(data),
+    };
+  } else if (data === undefined) {
+    obj = {
+      type: "UNDEFINED",
+      data: "",
+    };
+  } else {
+    obj = {
+      type: "JSON",
+      data: JSON.stringify(data),
+    };
+  }
+  localStorage.setItem(key, JSON.stringify(obj));
+}
+
+export { queryNodes, stringifyCSV, stringifySVG, storeAny };

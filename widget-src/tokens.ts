@@ -21,6 +21,8 @@ export const metrics = {
 
   iconWidth: 60,
   iconHeight: 75,
+
+  textHeight: 20,
 };
 
 export const colors = {
@@ -63,6 +65,10 @@ export const badges = {
     textFill: "#F24822",
   },
   RUNNING: <BadgeStyle>{
+    fill: { r: 24 / 255, g: 160 / 255, b: 251 / 255, a: 0.16 },
+    textFill: "#0D99FF",
+  },
+  FORMATTING: <BadgeStyle>{
     fill: { r: 24 / 255, g: 160 / 255, b: 251 / 255, a: 0.16 },
     textFill: "#0D99FF",
   },

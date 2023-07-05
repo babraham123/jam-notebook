@@ -7,6 +7,8 @@
     "lib": ["es6"],
     "strict": true,
     "moduleResolution": "Node",
-    "typeRoots": ["../node_modules/@figma"]
+    "typeRoots": ["../node_modules/@figma"],
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   }
 }

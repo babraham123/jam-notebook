@@ -10,6 +10,7 @@
   "widgetApi": "1.0.0",
   "enableProposedApi": false,
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": ["*"],
+    "reasoning": "Needed to import libraries and data from the web."
   }
 }

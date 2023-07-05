@@ -1,7 +1,12 @@
-import { Obj } from "../shared/types";
+import { Buffer } from "buffer";
 import parse from "parse-es-import";
 import { parse as parseCSV } from "csv-parse/sync";
 import { js as jsBeautify } from "js-beautify";
+
+import { Endpoint, Obj } from "../shared/types";
+import { getOutput } from "./utils";
+
+const VAR_REGEX = /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
 
 // This lets us access the execution environment from the error handler.
 export class WrappedError extends Error {
@@ -97,58 +102,71 @@ function replaceImports(code: string): string {
   return newCode;
 }
 
-export async function runJSScript(
-  code: string,
-  inputs: Obj[],
-  std: any
-): Promise<Obj> {
-  const figma = Object.freeze({
-    notebook: Object.freeze(std),
-  });
-
-  // const inputCode = `
-  //   const inputs = [
-  //     ${inputs.map(formatAsCode).join(',\n')}
-  //   ];
-  // `;
-  const parsedInputs = inputs.map(parseInput);
-  const runFunc = replaceImports(code);
-
-  const script = `
-    ${runFunc}
-    return await run(inputs);
-`;
-  const func = new Function("figma", "inputs", script);
-
-  try {
-    return await func(figma, parsedInputs, script);
-  } catch (err) {
-    // Rethrow, just wrap the error with relevant information.
-    throw new WrappedError(err as Error, func);
-  }
+interface Variable {
+  keyword: string;
+  name: string;
 }
 
-export async function testJSScript(
+export function extractVariable(code: string): Variable {
+  const found = code.match(VAR_REGEX);
+  if (!found || !found.groups) {
+    throw new Error(`Could not extract variable name from code: ${code}`);
+  }
+  return {
+    keyword: found.groups.keyword,
+    name: found.groups.name,
+  };
+}
+
+export async function runJSScript(
   code: string,
-  testCode: string,
+  inputs: Endpoint[],
+  outputs: Endpoint[],
   std: any
-): Promise<Obj> {
+): Promise<void> {
   const figma = Object.freeze({
     notebook: Object.freeze(std),
   });
 
-  const runFunc = replaceImports(code);
-  const testFunc = replaceImports(testCode);
+  const codeLines = code.split("\n");
+  for (const endpoint of inputs) {
+    if (!endpoint.destLineNum) {
+      throw new Error(`No destination for input: ${JSON.stringify(endpoint)}`);
+    }
+    const variable = extractVariable(codeLines[endpoint.destLineNum]);
+    if (endpoint.node) {
+      codeLines[endpoint.destLineNum] = `${variable.keyword} ${
+        variable.name
+      } = ${JSON.stringify(endpoint.node)};`;
+      continue;
+    }
+
+    const input = getOutput(endpoint.sourceId, endpoint.lineNum);
+    if (!input) {
+      throw new Error(`Input not found: ${JSON.stringify(endpoint)}`);
+    }
+    const inputCode = formatAsCode(input);
+    codeLines[
+      endpoint.destLineNum
+    ] = `${variable.keyword} ${variable.name} = ${inputCode};`;
+  }
+
+  for (const endpoint of outputs) {
+    const variable = extractVariable(codeLines[endpoint.lineNum]);
+    const key = `${endpoint.sourceId}:${endpoint.lineNum}`;
+    codeLines.push(`figma.notebook.storeAny('${key}', ${variable.name});`);
+  }
+
+  const runFunc = replaceImports(codeLines.join("\n"));
 
   const script = `
     ${runFunc}
-    ${testFunc}
-    return await test();
+    return Promise.resolve();
 `;
   const func = new Function("figma", script);
 
   try {
-    return await func(figma, script);
+    await func(figma, script);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
     throw new WrappedError(err as Error, func);

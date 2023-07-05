@@ -22,18 +22,18 @@ export interface ErrorLike {
   message: string;
 }
 
-export interface Result {
-  output: Obj;
-  inputsHash: string;
-  codeHash: string;
-}
-
-export type Language = "javascript" | "python" | "wasm";
+// export type Language = "typescript" | "javascript" | "python";
 
 export interface Code {
-  language: Language;
+  language: string;
   code: string;
-  testCode: string;
+}
+
+export interface Endpoint {
+  lineNum: number;
+  sourceId: string;
+  destLineNum?: number;
+  node?: any;
 }
 
 export interface NodeQuery {
@@ -41,37 +41,25 @@ export interface NodeQuery {
   id?: string;
 }
 
-export interface Dimension {
-  height: number;
-  width: number;
-}
-
-export interface AppState {
-  title: string;
-  codeWindow: Dimension;
-  previewWindow: Dimension;
-}
-
 export type StatusType = "SUCCESS" | "FAILURE";
 
 export type CommandType =
   | "INITIATE"
-  | "SAVE"
   | "RUN"
   | "FORMAT"
-  | "TEST"
   | "QUERY"
-  | "CLOSE";
-// future: 'INTROSPECT'
+  | "CREATE"
+  | "CLEAR";
 
 export interface IFrameMessage {
   type: CommandType;
   status?: StatusType;
   code?: Code;
-  inputs?: Obj[];
-  result?: Result;
-  appState?: AppState;
+  inputs?: Endpoint[];
+  outputs?: Endpoint[];
+  widgetId?: string;
   nodeQuery?: NodeQuery;
   nodes?: any[];
+  error?: ErrorLike;
   debug?: string;
 }

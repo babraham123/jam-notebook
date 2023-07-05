@@ -1,11 +1,39 @@
 import { print as subPrint, printErr as subPrintErr } from "../../shared/utils";
+import { Obj } from "../../shared/types";
+import { PLUGIN_ID } from "../../shared/constants";
 
 export function printErr(msg: string) {
-  subPrintErr(`iframe ${import.meta.env.VITE_TARGET}: ${msg}`);
+  subPrintErr(`iframe: ${msg}`);
 }
 
 export function print(msg: string) {
-  subPrint(`iframe ${import.meta.env.VITE_TARGET}: ${msg}`);
+  subPrint(`iframe: ${msg}`);
+}
+
+export function getOutput(baseKey: string, lineNum: number): Obj | undefined {
+  const res = localStorage.getItem(`${baseKey}:${lineNum}`);
+  if (res) {
+    return JSON.parse(res) as Obj;
+  }
+  return undefined;
+}
+
+export function setOutput(baseKey: string, lineNum: number, res: Obj) {
+  localStorage.setItem(`${baseKey}:${lineNum}`, JSON.stringify(res));
+}
+
+export function clearOutputs(baseKey?: string) {
+  if (!baseKey) {
+    return;
+  }
+  baseKey += ":";
+  const keys = Object.keys(localStorage);
+  for (const key of keys) {
+    if (key.startsWith(baseKey)) {
+      localStorage.removeItem(key);
+    }
+  }
+  parent.postMessage({ type: "CLEAR" }, PLUGIN_ID);
 }
 
 /**

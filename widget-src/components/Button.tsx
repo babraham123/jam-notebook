@@ -31,7 +31,11 @@ export function Button({ name, onClick, enabled }: Props) {
       }}
       onClick={onClickWrapper}
     >
-      <SVG src={icons[name]} width={metrics.iconWidth} height={metrics.iconHeight} />
+      <SVG
+        src={icons[name]}
+        width={metrics.iconWidth}
+        height={metrics.iconHeight}
+      />
       <Text horizontalAlignText="center">{name}</Text>
     </AutoLayout>
   );

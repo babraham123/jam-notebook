@@ -51,11 +51,7 @@ export function parse(selector: string, rootNode?: BaseNode): SceneNode[] {
   if (rootNode === undefined) {
     rootNode = figma.currentPage;
   }
-  const nodes = findSelection(
-    rootNode,
-    parseSelector(selector),
-    Search.ALL
-  );
+  const nodes = findSelection(rootNode, parseSelector(selector), Search.ALL);
   return nodes;
 }
 
