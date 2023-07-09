@@ -1,42 +1,25 @@
-# Fig Notebook
+# Jam Notebook
 
 Javascript code notebooks in Figjam.
 
-I build upon the work done by previous widgets, mainly Michael Bullington's Code Notebooks and Michael Feldstein's Play button.
+Built upon the work done by previous widgets, mainly Michael Bullington's Code Notebooks and Michael Feldstein's Play button.
 
 ## Quick start
 
-Open up the widget in a FigJam file, press the `edit` button and try the following sample code:
+Open up the widget in a FigJam file, place it on top of a code block and try the following sample code:
 
-```
-// imports
+```javascript
+// title: hello_world
 
-// helper functions
+// imports here
 
-async function run(inputs) {
-  // code
+// Point an arrow from another code block to the line below.
+const input;
 
-  return {
-    type: "TEXT", // "TEXT" | "JSON" | "CSV" | "SVG" | "BINARY" | "ERROR" | "UNDEFINED"
-    data: "hello, world"
-  };
-}
-```
+console.log('hello, world');
 
-Test code:
-
-```
-// imports
-
-// helper functions
-
-async function test() {
-  // setup and mocks
-
-  const output = await run(fakeInputs);
-
-  // asserts
-}
+// Point an arrow from the line below.
+const output = 'hello ' + input;
 ```
 
 ## Code organization
@@ -59,7 +42,7 @@ async function test() {
 ### One-time setup
 
 1. Make a copy of this folder
-2. Update manifest.json, package.json and package-lock.json where it says `WidgetTemplate`
+2. Update manifest.json, package.json and package-lock.json where it says `Jam Notebook`
 3. Install the required dependencies `npm ci`
 
 ### Importing your widget

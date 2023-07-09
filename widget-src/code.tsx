@@ -51,17 +51,19 @@ function Widget() {
   );
 
   useStickable(() => {
-    const notebook = figma.getNodeById(widgetId);
+    const node = figma.getNodeById(widgetId);
     if (
-      !notebook ||
-      !("stuckTo" in notebook) ||
-      !notebook.stuckTo ||
-      notebook.stuckTo.type !== "CODE_BLOCK"
+      !node ||
+      !("stuckTo" in node) ||
+      !node.stuckTo ||
+      node.stuckTo.type !== "CODE_BLOCK"
     ) {
       setCodeBlockId("");
+      setTitle(DEFAULT_TITLE);
       return;
     }
-    setCodeBlockId(notebook.stuckTo.id);
+    setCodeBlockId(node.stuckTo.id);
+    setTitle(extractTitle(node.stuckTo.code));
   });
 
   const HANDLERS: Record<

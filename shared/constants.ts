@@ -11,12 +11,13 @@ export const DEFAULT_CODE: Code = {
 
 // imports
 
-figma.localStore({
-  type: 'TEXT',
-  data: 'hello, world'
-});
+// Point an arrow from another code block to the line below.
+const input;
 
 console.log('hello, world');
+
+// Point an arrow from the line below.
+const output = 'hello ' + input;
 `,
 };
 

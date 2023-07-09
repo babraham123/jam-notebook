@@ -3,7 +3,6 @@
  * 'figma.notebook'.
  */
 
-import { Buffer } from "buffer";
 import { stringify as stringifyCSV } from "csv-stringify/sync";
 
 import { svgToString as stringifySVG } from "../utils";
@@ -43,7 +42,7 @@ function queryNodes(
         id,
       },
     };
-    window.postMessage(queryMsg, PLUGIN_ID);
+    parent.postMessage(queryMsg, PLUGIN_ID);
   });
 }
 

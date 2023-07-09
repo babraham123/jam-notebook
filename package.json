@@ -20,7 +20,6 @@
   "license": "MIT License",
   "dependencies": {
     "blob-util": "^2.0.2",
-    "buffer": "^6.0.3",
     "css-selector-parser": "^1.4.1",
     "csv-parse": "^5.3.3",
     "csv-stringify": "^6.2.3",
@@ -43,6 +42,7 @@
     "prettier": "^2.3.2",
     "typescript": "*",
     "vite": "^4.3.9",
+    "vite-plugin-node-polyfills": "^0.9.0",
     "vite-plugin-singlefile": "^0.13.5"
   }
 }

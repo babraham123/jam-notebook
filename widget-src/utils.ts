@@ -24,10 +24,10 @@ export async function adjustAndProcessFrames(nodeId: string): Promise<FrameIO> {
   if (!rootNode) {
     return { inputs, outputs };
   }
-  const connectorNodes = rootNode.attachedConnectors;
-  for (const cNode of connectorNodes) {
-    cNode.remove();
-  }
+  // const connectorNodes = rootNode.attachedConnectors;
+  // for (const cNode of connectorNodes) {
+  //   cNode.remove();
+  // }
 
   const frames = figma.currentPage
     .findAllWithCriteria({ types: ["FRAME"] })
@@ -123,10 +123,10 @@ export function removeOutputs(nodeId: string) {
   if (!rootNode) {
     return;
   }
-  const connectorNodes = rootNode.attachedConnectors;
-  for (const cNode of connectorNodes) {
-    cNode.remove();
-  }
+  // const connectorNodes = rootNode.attachedConnectors;
+  // for (const cNode of connectorNodes) {
+  //   cNode.remove();
+  // }
   const frames = figma.currentPage
     .findAllWithCriteria({ types: ["FRAME"] })
     .filter((node) => {
@@ -154,10 +154,10 @@ export function removeOutputs(nodeId: string) {
 
 export function extractTitle(code: string): string {
   const matches = code.match(TITLE_REGEX);
-  if (!matches || matches.length < 1) {
+  if (!matches || matches.length < 2) {
     return "untitled";
   }
-  return matches[0];
+  return matches[1];
 }
 
 export async function addCodeBlock(

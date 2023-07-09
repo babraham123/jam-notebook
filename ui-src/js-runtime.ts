@@ -1,4 +1,3 @@
-import { Buffer } from "buffer";
 import parse from "parse-es-import";
 import { parse as parseCSV } from "csv-parse/sync";
 import { js as jsBeautify } from "js-beautify";
@@ -163,6 +162,7 @@ export async function runJSScript(
     ${runFunc}
     return Promise.resolve();
 `;
+  console.log(script); // TODO: remove after validating iframe script
   const func = new Function("figma", script);
 
   try {
