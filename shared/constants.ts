@@ -3,7 +3,8 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
-export const PLUGIN_ID = manifest.id;
+// TODO: use manifest.id when deployed
+export const PLUGIN_ID = '*';
 
 export const DEFAULT_CODE: Code = {
   language: "javascript",

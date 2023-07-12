@@ -1,5 +1,5 @@
 import { print as subPrint, printErr as subPrintErr } from "../../shared/utils";
-import { Obj } from "../../shared/types";
+import { IFrameMessage, Obj } from "../../shared/types";
 import { PLUGIN_ID } from "../../shared/constants";
 
 export function printErr(msg: string) {
@@ -8,6 +8,10 @@ export function printErr(msg: string) {
 
 export function print(msg: string) {
   subPrint(`iframe: ${msg}`);
+}
+
+export function postMessage(msg: IFrameMessage) {
+  parent.postMessage({ pluginMessage: msg}, PLUGIN_ID);
 }
 
 export function getOutput(baseKey: string, lineNum: number): Obj | undefined {
@@ -33,7 +37,7 @@ export function clearOutputs(baseKey?: string) {
       localStorage.removeItem(key);
     }
   }
-  parent.postMessage({ type: "CLEAR" }, PLUGIN_ID);
+  postMessage({ type: "CLEAR" });
 }
 
 /**

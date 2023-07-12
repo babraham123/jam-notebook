@@ -1,6 +1,5 @@
 import * as std from "./std";
 import { runJSScript, formatJSScript } from "./js-runtime";
-import { PLUGIN_ID } from "../shared/constants";
 import { IFrameMessage, CommandType, Obj, ErrorLike } from "../shared/types";
 import { print, printErr, setOutput, clearOutputs } from "./utils";
 
@@ -134,11 +133,11 @@ export async function handleMessage(msg: IFrameMessage): Promise<void> {
   }
   const resp = await HANDLERS[msg.type](msg);
   if (resp) {
-    parent.postMessage(resp, PLUGIN_ID);
+    postMessage(resp);
   }
 }
 
 // Send 'ready' msg to the widget.
 export function initiate(): void {
-  parent.postMessage({ type: "INITIATE" }, PLUGIN_ID);
+  postMessage({ type: "INITIATE" });
 }

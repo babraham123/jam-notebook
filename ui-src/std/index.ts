@@ -5,9 +5,8 @@
 
 import { stringify as stringifyCSV } from "csv-stringify/sync";
 
-import { svgToString as stringifySVG } from "../utils";
+import { postMessage, svgToString as stringifySVG } from "../utils";
 import { IFrameMessage, Obj } from "../../shared/types";
-import { PLUGIN_ID } from "../../shared/constants";
 
 
 function queryNodes(node: { id: string }, selector: string): Promise<any[]>;
@@ -42,7 +41,7 @@ function queryNodes(
         id,
       },
     };
-    parent.postMessage(queryMsg, PLUGIN_ID);
+    postMessage(queryMsg);
   });
 }
 
