@@ -36,7 +36,7 @@ export function Button({ name, onClick, enabled }: Props) {
         width={metrics.iconWidth}
         height={metrics.iconHeight}
       />
-      <Text horizontalAlignText="center">{name}</Text>
+      {/* <Text horizontalAlignText="center">{name}</Text> */}
     </AutoLayout>
   );
 }

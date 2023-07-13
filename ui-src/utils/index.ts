@@ -2,12 +2,12 @@ import { print as subPrint, printErr as subPrintErr } from "../../shared/utils";
 import { IFrameMessage, Obj } from "../../shared/types";
 import { PLUGIN_ID } from "../../shared/constants";
 
-export function printErr(msg: string) {
-  subPrintErr(`iframe: ${msg}`);
+export function printErr(msg: any) {
+  subPrintErr('iframe:', msg);
 }
 
-export function print(msg: string) {
-  subPrint(`iframe: ${msg}`);
+export function print(msg: any) {
+  subPrint('iframe:', msg);
 }
 
 export function postMessage(msg: IFrameMessage) {

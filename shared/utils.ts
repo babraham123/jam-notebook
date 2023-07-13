@@ -1,7 +1,7 @@
-export function printErr(msg: string) {
-  console.error(`fig: ${msg}`);
+export function printErr(prefix: string, msg: any) {
+  console.error(`fig: ${prefix} ${JSON.stringify(msg)}`);
 }
 
-export function print(msg: string) {
-  console.log(`fig: ${msg}`);
+export function print(prefix: string, msg: any) {
+  console.log(`fig: ${prefix} ${JSON.stringify(msg)}`);
 }

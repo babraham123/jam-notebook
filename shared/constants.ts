@@ -6,6 +6,8 @@ import manifest from "../manifest.json";
 // TODO: use manifest.id when deployed
 export const PLUGIN_ID = '*';
 
+export const JS_VAR_REGEX = /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
+
 export const DEFAULT_CODE: Code = {
   language: "javascript",
   code: `// title: hello_world

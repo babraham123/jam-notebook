@@ -2,10 +2,10 @@ import parse from "parse-es-import";
 import { parse as parseCSV } from "csv-parse/sync";
 import { js as jsBeautify } from "js-beautify";
 
+import { JS_VAR_REGEX } from "../shared/constants";
 import { Endpoint, Obj } from "../shared/types";
-import { getOutput } from "./utils";
+import { getOutput, print } from "./utils";
 
-const VAR_REGEX = /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
 
 // This lets us access the execution environment from the error handler.
 export class WrappedError extends Error {
@@ -107,7 +107,7 @@ interface Variable {
 }
 
 export function extractVariable(code: string): Variable {
-  const found = code.match(VAR_REGEX);
+  const found = code.match(JS_VAR_REGEX);
   if (!found || !found.groups) {
     throw new Error(`Could not extract variable name from code: ${code}`);
   }
@@ -162,7 +162,7 @@ export async function runJSScript(
     ${runFunc}
     return Promise.resolve();
 `;
-  console.log(script); // TODO: remove after validating iframe script
+  print(script); // TODO: remove after validating iframe script
   const func = new Function("figma", script);
 
   try {

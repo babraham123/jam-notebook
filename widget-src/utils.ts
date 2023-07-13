@@ -1,20 +1,174 @@
 import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
+import { JS_VAR_REGEX } from "../shared/constants";
 import { metrics } from "./tokens";
 import { Endpoint, Obj } from "../shared/types";
 
 const TITLE_REGEX = /\/\/\s*title:\s*(.*)/;
 
-export function printErr(msg: string) {
-  subPrintErr(`widget: ${msg}`);
+export function printErr(msg: any) {
+  subPrintErr('widget:', msg);
 }
 
-export function print(msg: string) {
-  subPrint(`widget: ${msg}`);
+export function print(msg: any) {
+  subPrint('widget:', msg);
 }
 
 interface FrameIO {
   inputs: Endpoint[];
   outputs: Endpoint[];
+}
+
+function getGroup(blockId: string): GroupNode | undefined {
+  let group: GroupNode | undefined;
+  if (!blockId) {
+    return undefined;
+  }
+  figma.currentPage
+    .findAllWithCriteria({ types: ["GROUP"] })
+    .forEach((node) => {
+      if (node.getPluginData("blockId") !== blockId) {
+        group = node as GroupNode;
+      }
+    });
+  return group;
+}
+
+export function adjustFrames(blockId: string) {
+  if (!blockId) {
+    return;
+  }
+  const block = figma.getNodeById(blockId) as CodeBlockNode;
+  if (!block) {
+    return;
+  }
+  let base = block.parent as FrameNode;
+  if (!base || base.type !== "FRAME") {
+    const frame = figma.createFrame();
+    frame.x = block.x;
+    frame.y = block.y;
+    frame.resize(block.width, block.height);
+    frame.setPluginData("blockId", block.id);
+    figma.currentPage.appendChild(frame);
+    // frame.visible = false;
+    frame.fills = [];
+    frame.appendChild(block);
+    base = frame;
+  }
+  
+
+  const decls = new Set<number>();
+  block.code.split("\n").forEach((line, i) => {
+    if (JS_VAR_REGEX.test(line)) {
+      decls.add(i);
+    }
+  });
+
+  const existing = new Set<number>();
+  base.children.forEach((child) => {
+    if (child.type !== "FRAME") {
+      return;
+    }
+    const frame = child as FrameNode;
+    const str = frame.getPluginData("lineNum")
+    if (!str) {
+      return;
+    }
+    const lineNum = parseInt(str);
+    if (!decls.has(lineNum)) {
+      frame.remove();
+      return;
+    }
+    existing.add(lineNum);
+    frame.resize(base.width - metrics.textOffset, metrics.textHeight);
+  });
+
+  const newDecls = new Set([...decls].filter(i => !existing.has(i)));
+  newDecls.forEach((lineNum) => {
+    const frame = figma.createFrame();
+    frame.x = metrics.textOffset;
+    frame.y = (lineNum + 1) * metrics.textHeight;
+    frame.resize(base.width - metrics.textOffset, metrics.textHeight);
+    frame.setPluginData("lineNum", lineNum.toString());
+    frame.setPluginData("blockId", block.id);
+    // frame.visible = false;
+    frame.fills = [];
+    base.appendChild(frame);
+  });
+
+  // avoid confusion
+  base.attachedConnectors.forEach((connector) => {
+    connector.remove();
+  });
+  block.attachedConnectors.forEach((connector) => {
+    connector.remove();
+  });
+}
+
+// adjustFrames must be called before this
+export async function processFrames(blockId: string): Promise<FrameIO> {
+  const inputs: Endpoint[] = [];
+  const outputs: Endpoint[] = [];
+  if (!blockId) {
+    return { inputs, outputs };
+  }
+  const block = figma.getNodeById(blockId) as CodeBlockNode;
+  if (!block) {
+    return { inputs, outputs };
+  }
+
+  for (const child of block.parent?.children ?? []) {
+    if (child.type !== "FRAME") {
+      continue;
+    }
+    const frame = child as FrameNode;
+    const lineNum = parseInt(frame.getPluginData("lineNum"));
+
+    for (const cNode of frame.attachedConnectors) {
+      const start = cNode.connectorStart;
+      const end = cNode.connectorEnd;
+      if (!("endpointNodeId" in start)) {
+        frame.remove();
+        continue;
+      }
+      if (start.endpointNodeId === frame.id) {
+        outputs.push({
+          sourceId: blockId,
+          lineNum,
+        });
+        continue;
+      }
+      if ("endpointNodeId" in end && end.endpointNodeId === frame.id) {
+        const node = figma.getNodeById(start.endpointNodeId) as SceneNode;
+        if (!node) {
+          continue;
+        }
+        if (node.type === "FRAME") {
+          const sourceId = node.getPluginData("blockId");
+          const inputLineNum = node.getPluginData("lineNum");
+          if (sourceId && inputLineNum) {
+            inputs.push({
+              sourceId,
+              lineNum: parseInt(inputLineNum),
+              destLineNum: lineNum,
+            });
+            continue;
+          }
+        }
+        const data = await node.exportAsync({
+          format: "JSON_REST_V1",
+        });
+        inputs.push({
+          sourceId: node.id,
+          lineNum: 0,
+          destLineNum: lineNum,
+          node: data as any,
+        });
+      }
+      printErr("Unknown connector");
+    };
+  };
+
+  return { inputs, outputs };
 }
 
 export async function adjustAndProcessFrames(nodeId: string): Promise<FrameIO> {
@@ -118,38 +272,25 @@ export async function adjustAndProcessFrames(nodeId: string): Promise<FrameIO> {
   return { inputs, outputs };
 }
 
-export function removeOutputs(nodeId: string) {
-  const rootNode = figma.getNodeById(nodeId) as SceneNode;
-  if (!rootNode) {
+export function removeOutputs(blockId: string) {
+  const block = figma.getNodeById(blockId) as CodeBlockNode;
+  if (!block) {
     return;
   }
-  // const connectorNodes = rootNode.attachedConnectors;
-  // for (const cNode of connectorNodes) {
-  //   cNode.remove();
-  // }
-  const frames = figma.currentPage
-    .findAllWithCriteria({ types: ["FRAME"] })
-    .filter((node) => {
-      if (node.getPluginData("parentId") !== nodeId) {
-        return false;
-      }
-      return true;
-    });
-  for (const frame of frames) {
-    const connectorNodes = frame.attachedConnectors;
-    for (const cNode of connectorNodes) {
+  block.parent?.children?.forEach((frame) => {
+    frame.attachedConnectors.forEach((cNode) => {
       const start = cNode.connectorStart;
       const end = cNode.connectorEnd;
       if (!("endpointNodeId" in start) || !("endpointNodeId" in end)) {
-        continue;
+        return;
       }
       if (start.endpointNodeId !== frame.id) {
-        continue;
+        return;
       }
       const node = figma.getNodeById(end.endpointNodeId) as SceneNode;
       node.remove();
-    }
-  }
+    });
+  });
 }
 
 export function extractTitle(code: string): string {
@@ -161,22 +302,25 @@ export function extractTitle(code: string): string {
 }
 
 export async function addCodeBlock(
-  widgetId: string,
+  nodeId: string,
   code: string,
   lang: string
 ): Promise<void> {
-  const selection = figma.getNodeById(widgetId);
-  if (!selection || selection.type !== "WIDGET") {
+  if (!nodeId) {
     return;
   }
-  const newX = selection.x + selection.width + metrics.resultSpacing;
-  const newY = selection.y;
+  const selection = figma.getNodeById(nodeId) as SceneNode;
+  if (!selection) {
+    return;
+  }
   await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium" });
   const block = figma.createCodeBlock();
   block.code = code;
   block.codeLanguage = lang.toUpperCase() as CodeBlockNode["codeLanguage"];
+  block.x = selection.x + selection.width + metrics.resultSpacing;
+  block.y = selection.y;
   figma.currentPage.appendChild(block);
-  // figma.viewport.scrollAndZoomIntoView([block]);
+  figma.viewport.scrollAndZoomIntoView([selection, block]);
   figma.currentPage.selection = [block];
 }
 

@@ -1,7 +1,7 @@
 import * as std from "./std";
 import { runJSScript, formatJSScript } from "./js-runtime";
-import { IFrameMessage, CommandType, Obj, ErrorLike } from "../shared/types";
-import { print, printErr, setOutput, clearOutputs } from "./utils";
+import { IFrameMessage, CommandType, ErrorLike } from "../shared/types";
+import { postMessage, print, setOutput, clearOutputs } from "./utils";
 
 // Handlers return the msg that will be sent back to the widget. Type undefined
 // will be ignored.
@@ -139,5 +139,5 @@ export async function handleMessage(msg: IFrameMessage): Promise<void> {
 
 // Send 'ready' msg to the widget.
 export function initiate(): void {
-  postMessage({ type: "INITIATE" });
+  postMessage({ type: "INITIATE" }); // , debug: "iframe started" });
 }

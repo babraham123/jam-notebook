@@ -19,10 +19,11 @@ export const metrics = {
   cornerRadius: 8,
   resultSpacing: 64,
 
-  iconWidth: 60,
-  iconHeight: 75,
+  iconWidth: 30,
+  iconHeight: 35,
 
-  textHeight: 20,
+  textHeight: 23,
+  textOffset: 5,
 };
 
 export const colors = {

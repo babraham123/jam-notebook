@@ -25,7 +25,7 @@ function queryNodes(
 
   return new Promise((resolve) => {
     function callback(event: MessageEvent) {
-      if (event?.data?.type === "QUERY") {
+      if (event.data?.type === "QUERY") {
         const msg = event.data as IFrameMessage;
         resolve(msg.nodes ?? []);
       }
@@ -118,6 +118,7 @@ function storeAny(key: string, data: any) {
     };
   }
   localStorage.setItem(key, JSON.stringify(obj));
+  // Or send msg to widget and call setSharedPluginData
 }
 
 export { queryNodes, stringifyCSV, stringifySVG, storeAny };

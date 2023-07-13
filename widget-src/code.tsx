@@ -17,7 +17,8 @@ import {
   print,
   printErr,
   extractTitle,
-  adjustAndProcessFrames,
+  adjustFrames,
+  processFrames,
   addCodeBlock,
   parseNode,
   removeOutputs,
@@ -32,7 +33,7 @@ type ResultStatus = "EMPTY" | "RUNNING" | "FORMATTING" | "SUCCESS" | "ERROR";
 async function ignoreHandler(
   msg: IFrameMessage
 ): Promise<IFrameMessage | undefined> {
-  console.log(JSON.stringify(msg));
+  print(JSON.stringify(msg));
   return undefined;
 }
 
@@ -64,6 +65,7 @@ function Widget() {
     }
     setCodeBlockId(node.stuckTo.id);
     setTitle(extractTitle(node.stuckTo.code));
+    adjustFrames(node.stuckTo.id);
   });
 
   const HANDLERS: Record<
@@ -79,11 +81,12 @@ function Widget() {
   };
 
   useEffect(() => {
-    const handleMsg = async (event: any, props: OnMessageProperties) => {
-      if (!event?.data?.type) {
+    const handleMsg = async (data: any, props: OnMessageProperties) => {
+      print(data); // TODO: remove after validating msg passing
+      if (!data?.type || Object.keys(HANDLERS).indexOf(data.type) < 0) {
         return;
       }
-      const msg = event.data as IFrameMessage;
+      const msg = data as IFrameMessage;
       if (msg.debug) {
         print(`msg ${msg.type}, origin: ${props.origin}, debug: ${msg.debug}`);
       }
@@ -121,7 +124,8 @@ function Widget() {
         },
       };
     } else if (resultStatus === "RUNNING") {
-      const io = await adjustAndProcessFrames(codeBlockId);
+      adjustFrames(codeBlockId);
+      const io = await processFrames(codeBlockId);
       return {
         type: "RUN",
         code: {
@@ -131,19 +135,21 @@ function Widget() {
         inputs: io.inputs,
         outputs: io.outputs,
       };
+    } else {
+      closeIFrame();
+      printErr(`Unexpected result status: ${resultStatus}`);
     }
-    closeIFrame();
-    printErr(`Unexpected result status: ${resultStatus}`);
     return undefined;
   }
 
   async function formatHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
-    if (msg?.code && codeBlockId !== "") {
+    if (msg?.code && codeBlockId) {
       const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
       if (block) {
         block.code = msg.code.code;
+        adjustFrames(codeBlockId);
       }
     }
     return undefined;
@@ -187,13 +193,6 @@ function Widget() {
     };
   }
 
-  async function closeHandler(
-    msg: IFrameMessage
-  ): Promise<IFrameMessage | undefined> {
-    closeIFrame();
-    return undefined;
-  }
-
   async function clearHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
@@ -224,7 +223,11 @@ function Widget() {
   }
 
   async function handleAddBlockBtn(): Promise<void> {
-    await addCodeBlock(widgetId, DEFAULT_CODE.code, DEFAULT_CODE.language);
+    let id = widgetId;
+    if (codeBlockId) {
+      id = codeBlockId;
+    }
+    await addCodeBlock(id, DEFAULT_CODE.code, DEFAULT_CODE.language);
   }
 
   function startIFrame(): Promise<void> {
@@ -254,15 +257,15 @@ function Widget() {
         propertyName: "addBlock",
       },
     ],
-    ({ propertyName, propertyValue }) => {
+    async ({ propertyName, propertyValue }) => {
       if (propertyName === "play") {
         if (resultStatus !== "RUNNING") {
-          return handlePlayBtn();
+          return await handlePlayBtn();
         }
       } else if (propertyName === "format") {
-        return handleFormatBtn();
+        return await handleFormatBtn();
       } else if (propertyName === "addBlock") {
-        return handleAddBlockBtn();
+        return await handleAddBlockBtn();
       }
     }
   );
@@ -275,7 +278,7 @@ function Widget() {
       stroke={colors.stroke}
       strokeWidth={1}
     >
-      <Text fontSize={32} horizontalAlignText="center">
+      <Text fontSize={16} horizontalAlignText="center">
         {title}
       </Text>
       <Rectangle width="fill-parent" height={1} stroke={colors.stroke} />
@@ -304,16 +307,16 @@ function Widget() {
             enabled={resultStatus !== "RUNNING"}
           ></Button>
         )}
-        {resultStatus !== "EMPTY" && (
-          <AutoLayout
-            padding={metrics.buttonPadding}
-            fill={badges[resultStatus].fill}
-            cornerRadius={metrics.cornerRadius}
-          >
-            <Text fill={badges[resultStatus].textFill}>{resultStatus}</Text>
-          </AutoLayout>
-        )}
       </AutoLayout>
+      {resultStatus !== "EMPTY" && (
+        <AutoLayout
+          padding={metrics.buttonPadding}
+          fill={badges[resultStatus].fill}
+          cornerRadius={metrics.cornerRadius}
+        >
+          <Text fill={badges[resultStatus].textFill}>{resultStatus}</Text>
+        </AutoLayout>
+      )}
     </AutoLayout>
   );
 }
