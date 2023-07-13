@@ -129,6 +129,7 @@ export async function runJSScript(
 
   const codeLines = code.split("\n");
   for (const endpoint of inputs) {
+    print(endpoint); // TODO: remove after iframe runner
     if (!endpoint.destLineNum) {
       throw new Error(`No destination for input: ${JSON.stringify(endpoint)}`);
     }
@@ -162,7 +163,7 @@ export async function runJSScript(
     ${runFunc}
     return Promise.resolve();
 `;
-  print(script); // TODO: remove after validating iframe script
+  print(script); // TODO: remove after validating iframe runner
   const func = new Function("figma", script);
 
   try {

@@ -24,6 +24,7 @@ export function getOutput(baseKey: string, lineNum: number): Obj | undefined {
 
 export function setOutput(baseKey: string, lineNum: number, res: Obj) {
   localStorage.setItem(`${baseKey}:${lineNum}`, JSON.stringify(res));
+  // Or send msg to widget and call setSharedPluginData
 }
 
 export function clearOutputs(baseKey?: string) {
@@ -37,7 +38,6 @@ export function clearOutputs(baseKey?: string) {
       localStorage.removeItem(key);
     }
   }
-  postMessage({ type: "CLEAR" });
 }
 
 /**

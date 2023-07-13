@@ -5,7 +5,7 @@
 
 import { stringify as stringifyCSV } from "csv-stringify/sync";
 
-import { postMessage, svgToString as stringifySVG } from "../utils";
+import { postMessage, setOutput, svgToString as stringifySVG } from "../utils";
 import { IFrameMessage, Obj } from "../../shared/types";
 
 
@@ -69,7 +69,7 @@ function stringifyBytes(
   }
 }
 
-function storeAny(key: string, data: any) {
+function storeAny(baseKey: string, lineNum: number, data: any) {
   let obj: Obj;
   if (
     data instanceof Uint8Array ||
@@ -117,8 +117,7 @@ function storeAny(key: string, data: any) {
       data: JSON.stringify(data),
     };
   }
-  localStorage.setItem(key, JSON.stringify(obj));
-  // Or send msg to widget and call setSharedPluginData
+  setOutput(baseKey, lineNum, obj);
 }
 
 export { queryNodes, stringifyCSV, stringifySVG, storeAny };

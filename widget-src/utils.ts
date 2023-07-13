@@ -41,18 +41,10 @@ export function adjustFrames(blockId: string) {
   if (!block) {
     return;
   }
-  let base = block.parent as FrameNode;
-  if (!base || base.type !== "FRAME") {
-    const frame = figma.createFrame();
-    frame.x = block.x;
-    frame.y = block.y;
-    frame.resize(block.width, block.height);
-    frame.setPluginData("blockId", block.id);
-    figma.currentPage.appendChild(frame);
-    // frame.visible = false;
-    frame.fills = [];
-    frame.appendChild(block);
-    base = frame;
+  let group = getGroup(blockId);
+  if (!group) {
+    group = figma.group([block], figma.currentPage);
+    group.setPluginData("blockId", blockId);
   }
   
 
@@ -64,7 +56,7 @@ export function adjustFrames(blockId: string) {
   });
 
   const existing = new Set<number>();
-  base.children.forEach((child) => {
+  group.children.forEach((child) => {
     if (child.type !== "FRAME") {
       return;
     }
@@ -79,24 +71,26 @@ export function adjustFrames(blockId: string) {
       return;
     }
     existing.add(lineNum);
-    frame.resize(base.width - metrics.textOffset, metrics.textHeight);
+    if (frame.width !== (block.width - 2*metrics.textOffset)) {
+      frame.resize(block.width - 2*metrics.textOffset, metrics.textHeight);
+    }
   });
 
   const newDecls = new Set([...decls].filter(i => !existing.has(i)));
   newDecls.forEach((lineNum) => {
     const frame = figma.createFrame();
-    frame.x = metrics.textOffset;
-    frame.y = (lineNum + 1) * metrics.textHeight;
-    frame.resize(base.width - metrics.textOffset, metrics.textHeight);
+    frame.x = block.x + metrics.textOffset;
+    frame.y = block.y + (lineNum + 1) * metrics.textHeight;
+    frame.resize(block.width - 2*metrics.textOffset, metrics.textHeight);
     frame.setPluginData("lineNum", lineNum.toString());
     frame.setPluginData("blockId", block.id);
     // frame.visible = false;
     frame.fills = [];
-    base.appendChild(frame);
+    group?.appendChild(frame);
   });
 
   // avoid confusion
-  base.attachedConnectors.forEach((connector) => {
+  group.attachedConnectors.forEach((connector) => {
     connector.remove();
   });
   block.attachedConnectors.forEach((connector) => {
@@ -111,12 +105,13 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
   if (!blockId) {
     return { inputs, outputs };
   }
+  const group = getGroup(blockId);
   const block = figma.getNodeById(blockId) as CodeBlockNode;
-  if (!block) {
+  if (!block || !group) {
     return { inputs, outputs };
   }
 
-  for (const child of block.parent?.children ?? []) {
+  for (const child of group.children) {
     if (child.type !== "FRAME") {
       continue;
     }

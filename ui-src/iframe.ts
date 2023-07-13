@@ -2,11 +2,10 @@ import { handleMessage, initiate } from "./messages";
 import { print } from "./utils";
 
 window.onmessage = (event: MessageEvent) => {
-  print(event); // TODO: remove after validating msg passing
-  if (!event.data?.type) {
+  if (!event.data?.pluginMessage?.type) {
     return;
   }
-  handleMessage(event.data);
+  handleMessage(event.data.pluginMessage);
 };
 
 initiate();

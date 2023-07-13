@@ -48,8 +48,7 @@ export type CommandType =
   | "RUN"
   | "FORMAT"
   | "QUERY"
-  | "CREATE"
-  | "CLEAR";
+  | "CREATE";
 
 export interface IFrameMessage {
   type: CommandType;

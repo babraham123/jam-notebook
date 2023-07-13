@@ -33,7 +33,7 @@ type ResultStatus = "EMPTY" | "RUNNING" | "FORMATTING" | "SUCCESS" | "ERROR";
 async function ignoreHandler(
   msg: IFrameMessage
 ): Promise<IFrameMessage | undefined> {
-  print(JSON.stringify(msg));
+  printErr(msg);
   return undefined;
 }
 
@@ -76,13 +76,11 @@ function Widget() {
     RUN: runHandler,
     FORMAT: formatHandler,
     QUERY: queryHandler,
-    CLEAR: clearHandler,
     CREATE: ignoreHandler,
   };
 
   useEffect(() => {
     const handleMsg = async (data: any, props: OnMessageProperties) => {
-      print(data); // TODO: remove after validating msg passing
       if (!data?.type || Object.keys(HANDLERS).indexOf(data.type) < 0) {
         return;
       }
@@ -124,6 +122,7 @@ function Widget() {
         },
       };
     } else if (resultStatus === "RUNNING") {
+      removeOutputs(codeBlockId);
       adjustFrames(codeBlockId);
       const io = await processFrames(codeBlockId);
       return {
@@ -135,19 +134,23 @@ function Widget() {
         inputs: io.inputs,
         outputs: io.outputs,
       };
-    } else {
-      closeIFrame();
-      printErr(`Unexpected result status: ${resultStatus}`);
     }
+
+    closeIFrame();
+    printErr(`Unexpected result status: ${resultStatus}`);
     return undefined;
   }
 
   async function formatHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
+    closeIFrame();
     if (msg?.code && codeBlockId) {
+      await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium" });
+      await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium Italic" });
+      await figma.loadFontAsync({ family: "Source Code Pro", style: "Regular" });
       const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
-      if (block) {
+      if (block) {  
         block.code = msg.code.code;
         adjustFrames(codeBlockId);
       }
@@ -158,13 +161,16 @@ function Widget() {
   async function runHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
+    closeIFrame();
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");
       } else {
         setResultStatus("ERROR");
         if (msg.error) {
-          figma.notify(msg.error.name + ": " + msg.error.message);
+          const err = msg.error.name + ": " + msg.error.message
+          figma.notify(err);
+          console.error(err + "\n" + msg.error.stack);
         }
       }
     }
@@ -193,19 +199,9 @@ function Widget() {
     };
   }
 
-  async function clearHandler(
-    msg: IFrameMessage
-  ): Promise<IFrameMessage | undefined> {
-    if (codeBlockId === "") {
-      return undefined;
-    }
-    removeOutputs(codeBlockId);
-    return undefined;
-  }
-
   function closeIFrame(): void {
-    figma.ui.close();
     figma.closePlugin();
+    // figma.ui.close();
     if (resultStatus === "RUNNING" || resultStatus === "FORMATTING") {
       // TODO: revert to last result
       setResultStatus("EMPTY");
