@@ -1,0 +1,4 @@
+# Test static hosting
+
+hi
+

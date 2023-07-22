@@ -133,6 +133,7 @@ function Widget() {
         },
         inputs: io.inputs,
         outputs: io.outputs,
+        widgetId,
       };
     }
 
@@ -161,7 +162,7 @@ function Widget() {
   async function runHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
-    closeIFrame();
+    closeIFrame(); // TODO: wait 1s for create msgs
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");

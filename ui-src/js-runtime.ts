@@ -145,6 +145,7 @@ export async function runJSScript(
     if (!input) {
       throw new Error(`Input not found: ${JSON.stringify(endpoint)}`);
     }
+    // TODO: Use alias var (__name__) to pass in var by value
     const inputCode = formatAsCode(input);
     codeLines[
       endpoint.destLineNum
@@ -153,8 +154,7 @@ export async function runJSScript(
 
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum]);
-    const key = `${endpoint.sourceId}:${endpoint.lineNum}`;
-    codeLines.push(`figma.notebook.storeAny('${key}', ${variable.name});`);
+    codeLines.push(`figma.notebook.storeAny('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`);
   }
 
   const runFunc = replaceImports(codeLines.join("\n"));

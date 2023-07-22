@@ -1,17 +1,16 @@
 import { defineConfig } from "vite";
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { viteSingleFile } from "vite-plugin-singlefile";
-// import { cssModulesPlugin } from "./build/vendor/css-module-plugin.mjs";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   root: "./ui-src",
   plugins: [
     nodePolyfills({
-      exclude: [
-        'fs',
-        'path',
-      ],
+      // exclude: [
+      //   'fs',
+      //   'path',
+      // ],
       globals: {
         Buffer: true,
         global: true,
@@ -20,7 +19,7 @@ export default defineConfig({
       protocolImports: true,
     }),
     viteSingleFile(),
-  ], // , cssModulesPlugin()],
+  ],
   build: {
     target: "esnext",
     assetsInlineLimit: 100000000,
