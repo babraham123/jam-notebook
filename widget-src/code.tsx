@@ -27,7 +27,12 @@ import {
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
 import { IFrameMessage, CommandType } from "../shared/types";
-import { DEFAULT_CODE, DEFAULT_TITLE, IFRAME_URL, INFO_URL } from "../shared/constants";
+import {
+  DEFAULT_CODE,
+  DEFAULT_TITLE,
+  IFRAME_URL,
+  INFO_URL,
+} from "../shared/constants";
 import { icons } from "../shared/icons";
 
 type ResultStatus = "EMPTY" | "RUNNING" | "FORMATTING" | "SUCCESS" | "ERROR";
@@ -55,9 +60,12 @@ function Widget() {
 
   useStickable(() => {
     const node = figma.getNodeById(widgetId);
-    if (node && ("stuckTo" in node) && node.stuckTo) {
+    if (node && "stuckTo" in node && node.stuckTo) {
       let group: GroupNode | undefined;
-      if (node.stuckTo.type === "FRAME" && node.stuckTo.parent?.type === "GROUP") {
+      if (
+        node.stuckTo.type === "FRAME" &&
+        node.stuckTo.parent?.type === "GROUP"
+      ) {
         group = node.stuckTo.parent;
       }
       if (node.stuckTo.type === "GROUP") {
@@ -96,6 +104,7 @@ function Widget() {
 
   useEffect(() => {
     const handleMsg = async (data: any, props: OnMessageProperties) => {
+      print(data);
       if (!data?.type || Object.keys(HANDLERS).indexOf(data.type) < 0) {
         return;
       }
@@ -266,8 +275,13 @@ function Widget() {
 
   function openLink(url: string): Promise<void> {
     return new Promise((resolve) => {
-      figma.showUI(`<script>window.open('${url}','_blank');</script>`, { visible: false });
-      figma.closePlugin();
+      figma.showUI(`<script>window.open('${url}','_blank');</script>`, {
+        visible: false,
+      });
+      setTimeout(function () {
+        figma.closePlugin();
+        resolve();
+      }, 1000);
     });
   }
 

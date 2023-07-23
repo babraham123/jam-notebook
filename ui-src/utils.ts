@@ -1,6 +1,6 @@
-import { print as subPrint, printErr as subPrintErr } from "../../shared/utils";
-import { IFrameMessage } from "../../shared/types";
-import { PLUGIN_ID } from "../../shared/constants";
+import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
+import { IFrameMessage } from "../shared/types";
+import { PLUGIN_ID } from "../shared/constants";
 
 export function printErr(msg: any) {
   subPrintErr("iframe:", msg);
@@ -13,8 +13,10 @@ export function print(msg: any) {
 export function postMessage(msg: IFrameMessage) {
   // const val = new URLSearchParams(document.location.search).get("source");
   // const source = val ? decodeURIComponent(val) : "*";
-  parent.postMessage({ pluginMessage: msg, pluginId: PLUGIN_ID }, "https://figma.com");
-  parent.postMessage({ pluginMessage: msg, pluginId: PLUGIN_ID }, "https://staging.figma.com");
+  const data = { pluginMessage: msg, pluginId: PLUGIN_ID };
+  print(data);
+  parent.postMessage(data, "https://www.figma.com");
+  parent.postMessage(data, "https://staging.figma.com");
 }
 
 export function getOutput(baseKey: string, lineNum: number): any | undefined {
