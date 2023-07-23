@@ -1,21 +1,5 @@
 // Used by both widget and iframe modules
 
-export type ObjType =
-  | "TEXT"
-  | "JSON"
-  | "CSV"
-  | "SVG"
-  | "BINARY"
-  | "ERROR"
-  | "UNDEFINED";
-// BINARY = base64 encoded
-// ERROR = formatted msg and stack
-
-export interface Obj {
-  type: ObjType;
-  data: string;
-}
-
 export interface ErrorLike {
   name: string;
   stack: string;
@@ -43,12 +27,7 @@ export interface NodeQuery {
 
 export type StatusType = "SUCCESS" | "FAILURE";
 
-export type CommandType =
-  | "INITIATE"
-  | "RUN"
-  | "FORMAT"
-  | "QUERY"
-  | "CREATE";
+export type CommandType = "INITIATE" | "RUN" | "FORMAT" | "QUERY" | "CREATE";
 
 export interface IFrameMessage {
   type: CommandType;

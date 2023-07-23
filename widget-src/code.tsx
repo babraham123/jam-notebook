@@ -4,6 +4,7 @@ const { widget } = figma;
 const {
   AutoLayout,
   Rectangle,
+  SVG,
   Text,
   useEffect,
   usePropertyMenu,
@@ -26,7 +27,8 @@ import {
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
 import { IFrameMessage, CommandType } from "../shared/types";
-import { DEFAULT_CODE, DEFAULT_TITLE } from "../shared/constants";
+import { DEFAULT_CODE, DEFAULT_TITLE, IFRAME_URL, INFO_URL } from "../shared/constants";
+import { icons } from "../shared/icons";
 
 type ResultStatus = "EMPTY" | "RUNNING" | "FORMATTING" | "SUCCESS" | "ERROR";
 
@@ -53,19 +55,32 @@ function Widget() {
 
   useStickable(() => {
     const node = figma.getNodeById(widgetId);
-    if (
-      !node ||
-      !("stuckTo" in node) ||
-      !node.stuckTo ||
-      node.stuckTo.type !== "CODE_BLOCK"
-    ) {
-      setCodeBlockId("");
-      setTitle(DEFAULT_TITLE);
-      return;
+    if (node && ("stuckTo" in node) && node.stuckTo) {
+      let group: GroupNode | undefined;
+      if (node.stuckTo.type === "FRAME" && node.stuckTo.parent?.type === "GROUP") {
+        group = node.stuckTo.parent;
+      }
+      if (node.stuckTo.type === "GROUP") {
+        group = node.stuckTo;
+      }
+      if (group) {
+        const block = figma.getNodeById(group.getPluginData("blockId"));
+        if (block && block.type === "CODE_BLOCK") {
+          setCodeBlockId(block.id);
+          setTitle(extractTitle(block.code));
+          adjustFrames(block.id);
+          return;
+        }
+      }
+      if (node.stuckTo.type === "CODE_BLOCK") {
+        setCodeBlockId(node.stuckTo.id);
+        setTitle(extractTitle(node.stuckTo.code));
+        adjustFrames(node.stuckTo.id);
+        return;
+      }
     }
-    setCodeBlockId(node.stuckTo.id);
-    setTitle(extractTitle(node.stuckTo.code));
-    adjustFrames(node.stuckTo.id);
+    setCodeBlockId("");
+    setTitle(DEFAULT_TITLE);
   });
 
   const HANDLERS: Record<
@@ -90,7 +105,7 @@ function Widget() {
       }
       const resp = await HANDLERS[msg.type as CommandType](msg);
       if (resp) {
-        figma.ui.postMessage(resp);
+        figma.ui.postMessage(resp, { origin: IFRAME_URL });
       }
     };
     figma.ui.on("message", handleMsg);
@@ -148,12 +163,20 @@ function Widget() {
     closeIFrame();
     if (msg?.code && codeBlockId) {
       await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium" });
-      await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium Italic" });
-      await figma.loadFontAsync({ family: "Source Code Pro", style: "Regular" });
+      await figma.loadFontAsync({
+        family: "Source Code Pro",
+        style: "Medium Italic",
+      });
+      await figma.loadFontAsync({
+        family: "Source Code Pro",
+        style: "Regular",
+      });
       const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
-      if (block) {  
+      if (block) {
         block.code = msg.code.code;
         adjustFrames(codeBlockId);
+
+        block.visible = !block.visible; // TODO
       }
     }
     return undefined;
@@ -162,19 +185,21 @@ function Widget() {
   async function runHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
-    closeIFrame(); // TODO: wait 1s for create msgs
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");
       } else {
         setResultStatus("ERROR");
         if (msg.error) {
-          const err = msg.error.name + ": " + msg.error.message
+          const err = msg.error.name + ": " + msg.error.message;
           figma.notify(err);
           console.error(err + "\n" + msg.error.stack);
         }
       }
     }
+    setTimeout(function () {
+      closeIFrame();
+    }, 1000);
     return undefined;
   }
 
@@ -229,10 +254,20 @@ function Widget() {
 
   function startIFrame(): Promise<void> {
     return new Promise((resolve) => {
-      figma.showUI(__html__, {
+      // const url = `${IFRAME_URL}?source=${encodeURIComponent( // @ts-expect-error
+      //   document.location.origin
+      // )}`;
+      figma.showUI(`<script>window.location.href = "${IFRAME_URL}"</script>`, {
         visible: false,
         title: "Code runner",
       });
+    });
+  }
+
+  function openLink(url: string): Promise<void> {
+    return new Promise((resolve) => {
+      figma.showUI(`<script>window.open('${url}','_blank');</script>`, { visible: false });
+      figma.closePlugin();
     });
   }
 
@@ -275,9 +310,24 @@ function Widget() {
       stroke={colors.stroke}
       strokeWidth={1}
     >
-      <Text fontSize={16} horizontalAlignText="center">
-        {title}
-      </Text>
+      <AutoLayout
+        direction="horizontal"
+        padding={metrics.headerPadding}
+        width="fill-parent"
+        verticalAlignItems="start"
+        spacing={metrics.padding}
+      >
+        <Text fontSize={16} horizontalAlignText="center">
+          {title}
+          {}
+        </Text>
+        <SVG
+          src={icons["info"]}
+          width={metrics.infoIconSize}
+          height={metrics.infoIconSize}
+          onClick={async () => await openLink(INFO_URL)}
+        />
+      </AutoLayout>
       <Rectangle width="fill-parent" height={1} stroke={colors.stroke} />
       <AutoLayout
         direction="horizontal"

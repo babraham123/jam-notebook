@@ -1,29 +1,32 @@
 import { print as subPrint, printErr as subPrintErr } from "../../shared/utils";
-import { IFrameMessage, Obj } from "../../shared/types";
+import { IFrameMessage } from "../../shared/types";
 import { PLUGIN_ID } from "../../shared/constants";
 
 export function printErr(msg: any) {
-  subPrintErr('iframe:', msg);
+  subPrintErr("iframe:", msg);
 }
 
 export function print(msg: any) {
-  subPrint('iframe:', msg);
+  subPrint("iframe:", msg);
 }
 
 export function postMessage(msg: IFrameMessage) {
-  parent.postMessage({ pluginMessage: msg}, PLUGIN_ID);
+  // const val = new URLSearchParams(document.location.search).get("source");
+  // const source = val ? decodeURIComponent(val) : "*";
+  parent.postMessage({ pluginMessage: msg, pluginId: PLUGIN_ID }, "https://figma.com");
+  parent.postMessage({ pluginMessage: msg, pluginId: PLUGIN_ID }, "https://staging.figma.com");
 }
 
-export function getOutput(baseKey: string, lineNum: number): Obj | undefined {
-  const res = localStorage.getItem(`${baseKey}:${lineNum}`);
+export function getOutput(baseKey: string, lineNum: number): any | undefined {
+  const res = sessionStorage.getItem(`${baseKey}:${lineNum}`);
   if (res) {
-    return JSON.parse(res) as Obj;
+    return JSON.parse(res);
   }
   return undefined;
 }
 
-export function setOutput(baseKey: string, lineNum: number, res: Obj) {
-  localStorage.setItem(`${baseKey}:${lineNum}`, JSON.stringify(res));
+export function setOutput(baseKey: string, lineNum: number, res: string) {
+  sessionStorage.setItem(`${baseKey}:${lineNum}`, res);
   // Or send msg to widget and call setSharedPluginData
 }
 
@@ -32,18 +35,16 @@ export function clearOutputs(baseKey?: string) {
     return;
   }
   baseKey += ":";
-  const keys = Object.keys(localStorage);
+  const keys = Object.keys(sessionStorage);
   for (const key of keys) {
     if (key.startsWith(baseKey)) {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
     }
   }
 }
 
-/**
- * Right now, since hidden iframes don't do layout, we can only check for SVG
- * elements inside.
- */
+// Right now, since hidden iframes don't do layout, we can only check for SVG
+// elements inside.
 export function svgToString(svg: Element): string {
   if (svg.nodeName.toLowerCase() !== "svg") {
     const newSvg = svg.querySelector("svg");
@@ -63,4 +64,13 @@ export function svgToString(svg: Element): string {
 
   const svgData = new XMLSerializer().serializeToString(svgContainer);
   return svgData;
+}
+
+export function stringToSVG(svgData: string): SVGSVGElement {
+  const doc = new DOMParser().parseFromString(svgData, "image/svg+xml");
+  const svg = doc.querySelector("svg");
+  if (!svg) {
+    throw new Error("No SVG elements were found.");
+  }
+  return svg;
 }

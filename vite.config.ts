@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
 // https://vitejs.dev/config/
@@ -7,10 +7,6 @@ export default defineConfig({
   root: "./ui-src",
   plugins: [
     nodePolyfills({
-      // exclude: [
-      //   'fs',
-      //   'path',
-      // ],
       globals: {
         Buffer: true,
         global: true,
@@ -30,7 +26,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
-        // manualChunks: () => 'everything.js',
       },
     },
   },

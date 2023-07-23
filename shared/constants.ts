@@ -3,10 +3,17 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
-// TODO: use manifest.id when deployed
-export const PLUGIN_ID = '*';
+export const PLUGIN_ID = manifest.id; // '*';
 
-export const JS_VAR_REGEX = /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
+export const IFRAME_URL =
+  "https://babraham123.github.io/jam-notebook/index.html";
+
+export const INFO_URL = "https://github.com/babraham123/jam-notebook#readme";
+
+export const JS_VAR_REGEX =
+  /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
+
+export const FILE_ID_REGEX = /^\/file\/(?<fileId>[^/]+)\/(?<fileName>.+)$/;
 
 export const DEFAULT_CODE: Code = {
   language: "javascript",

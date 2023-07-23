@@ -16,17 +16,7 @@ const HANDLERS: Record<
   CREATE: ignoreHandler,
 };
 
-function recordError(
-  type: CommandType,
-  widgetId: string | undefined,
-  err: ErrorLike
-): IFrameMessage {
-  if (widgetId) {
-    setOutput(widgetId, 0, {
-      type: "ERROR",
-      data: JSON.stringify(err),
-    });
-  }
+function getErrorMsg(type: CommandType, err: ErrorLike): IFrameMessage {
   return {
     type,
     status: "FAILURE",
@@ -46,7 +36,7 @@ async function runHandler(
 ): Promise<IFrameMessage | undefined> {
   clearOutputs(msg.widgetId);
   if (!msg.code) {
-    return recordError("RUN", msg.widgetId, {
+    return getErrorMsg("RUN", {
       name: "NotFound",
       message: "No code found",
       stack: "",
@@ -64,7 +54,7 @@ async function runHandler(
         );
         break;
       default:
-        return recordError("RUN", msg.widgetId, {
+        return getErrorMsg("RUN", {
           name: "Unsupported",
           message: `Unsupported language: ${msg.code.language}`,
           stack: "",
@@ -75,7 +65,7 @@ async function runHandler(
       status: "SUCCESS",
     };
   } catch (err: any) {
-    return recordError("RUN", msg.widgetId, {
+    return getErrorMsg("RUN", {
       name: err.name ?? "ExecutionError",
       message: err.message ?? "",
       stack: err.stack ?? `${err}`,
@@ -87,7 +77,7 @@ async function formatHandler(
   msg: IFrameMessage
 ): Promise<IFrameMessage | undefined> {
   if (!msg.code || !msg.code.code) {
-    return recordError("FORMAT", msg.widgetId, {
+    return getErrorMsg("FORMAT", {
       name: "NotFound",
       message: "No code found",
       stack: "",
@@ -101,7 +91,7 @@ async function formatHandler(
         formattedCode = formatJSScript(formattedCode);
         break;
       default:
-        return recordError("FORMAT", msg.widgetId, {
+        return getErrorMsg("FORMAT", {
           name: "Unsupported",
           message: `Unsupported language: ${msg.code.language}`,
           stack: "",
@@ -116,7 +106,7 @@ async function formatHandler(
       },
     };
   } catch (err: any) {
-    return recordError("FORMAT", msg.widgetId, {
+    return getErrorMsg("FORMAT", {
       name: err.name ?? "ExecutionError",
       message: err.message ?? "",
       stack: err.stack ?? `${err}`,

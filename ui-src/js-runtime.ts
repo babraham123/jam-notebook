@@ -3,9 +3,8 @@ import { parse as parseCSV } from "csv-parse/sync";
 import { js as jsBeautify } from "js-beautify";
 
 import { JS_VAR_REGEX } from "../shared/constants";
-import { Endpoint, Obj } from "../shared/types";
+import { Endpoint } from "../shared/types";
 import { getOutput, print } from "./utils";
-
 
 // This lets us access the execution environment from the error handler.
 export class WrappedError extends Error {
@@ -19,47 +18,12 @@ export class WrappedError extends Error {
   }
 }
 
-function formatAsCode(obj: Obj): string {
-  switch (obj.type) {
-    case "TEXT": // string
-      return `'${obj.data}'`;
-    case "JSON": // object
-      return obj.data;
-    case "CSV": // array of arrays
-      const records = parseCSV(obj.data, { skip_empty_lines: true });
-      return JSON.stringify(records);
-    case "SVG": // XMLDocument of a DOM Element
-      return `new DOMParser().parseFromString('${obj.data}', 'image/svg+xml')`;
-    case "BINARY": // Buffer
-      return `Buffer.from('${obj.data}', 'base64')`;
-    case "ERROR":
-      throw new Error(`Trying to insert error into code: ${obj.data}`);
-    case "UNDEFINED":
-      return "undefined";
-    default:
-      return "";
-  }
+function formatAsCode(data: any): string {
+  return `'${data}'`;
 }
 
-function parseInput(obj: Obj): any {
-  switch (obj.type) {
-    case "TEXT":
-      return obj.data;
-    case "JSON":
-      return JSON.parse(obj.data);
-    case "CSV": // array of arrays
-      return parseCSV(obj.data, { skip_empty_lines: true });
-    case "SVG": // XMLDocument of a DOM SVGSVGElement
-      return new DOMParser().parseFromString(obj.data, "image/svg+xml");
-    case "BINARY": // Buffer
-      return Buffer.from(obj.data, "base64");
-    case "ERROR":
-      return new Error(obj.data);
-    case "UNDEFINED":
-      return undefined;
-    default:
-      return "";
-  }
+function parseInput(data: any): any {
+  return JSON.parse(data);
 }
 
 // Insert Skypack imports into the user's code.
@@ -154,7 +118,9 @@ export async function runJSScript(
 
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum]);
-    codeLines.push(`figma.notebook.storeAny('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`);
+    codeLines.push(
+      `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`
+    );
   }
 
   const runFunc = replaceImports(codeLines.join("\n"));

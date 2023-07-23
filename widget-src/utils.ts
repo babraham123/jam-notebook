@@ -1,16 +1,16 @@
 import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
-import { JS_VAR_REGEX } from "../shared/constants";
+import { FILE_ID_REGEX, JS_VAR_REGEX } from "../shared/constants";
 import { metrics } from "./tokens";
-import { Endpoint, Obj } from "../shared/types";
+import { Endpoint } from "../shared/types";
 
 const TITLE_REGEX = /\/\/\s*title:\s*(.*)/;
 
 export function printErr(msg: any) {
-  subPrintErr('widget:', msg);
+  subPrintErr("widget:", msg);
 }
 
 export function print(msg: any) {
-  subPrint('widget:', msg);
+  subPrint("widget:", msg);
 }
 
 interface FrameIO {
@@ -46,7 +46,6 @@ export function adjustFrames(blockId: string) {
     group = figma.group([block], figma.currentPage);
     group.setPluginData("blockId", blockId);
   }
-  
 
   const decls = new Set<number>();
   block.code.split("\n").forEach((line, i) => {
@@ -61,7 +60,7 @@ export function adjustFrames(blockId: string) {
       return;
     }
     const frame = child as FrameNode;
-    const str = frame.getPluginData("lineNum")
+    const str = frame.getPluginData("lineNum");
     if (!str) {
       return;
     }
@@ -71,17 +70,17 @@ export function adjustFrames(blockId: string) {
       return;
     }
     existing.add(lineNum);
-    if (frame.width !== (block.width - 2*metrics.textOffset)) {
-      frame.resize(block.width - 2*metrics.textOffset, metrics.textHeight);
+    if (frame.width !== block.width - 2 * metrics.textOffset) {
+      frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
     }
   });
 
-  const newDecls = new Set([...decls].filter(i => !existing.has(i)));
+  const newDecls = new Set([...decls].filter((i) => !existing.has(i)));
   newDecls.forEach((lineNum) => {
     const frame = figma.createFrame();
     frame.x = block.x + metrics.textOffset;
     frame.y = block.y + (lineNum + 1) * metrics.textHeight;
-    frame.resize(block.width - 2*metrics.textOffset, metrics.textHeight);
+    frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
     frame.setPluginData("lineNum", lineNum.toString());
     frame.setPluginData("blockId", block.id);
     // frame.visible = false;
@@ -160,8 +159,8 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
         });
       }
       printErr("Unknown connector");
-    };
-  };
+    }
+  }
 
   return { inputs, outputs };
 }
@@ -263,7 +262,7 @@ export async function adjustAndProcessFrames(nodeId: string): Promise<FrameIO> {
     offset += metrics.textHeight;
     j++;
   }
-  
+
   return { inputs, outputs };
 }
 
@@ -476,43 +475,30 @@ export function serializeNode(
   return data;
 }
 
-function extractObjFromNode(node: BaseNode): Obj {
+function extractObjFromNode(node: BaseNode): string {
   switch (node.type) {
     case "WIDGET":
-      return {
-        type: "TEXT",
-        data: `${figma.currentPage.id}_${node.id}`,
-      };
+      return node.id;
     case "TEXT":
-      return {
-        type: "TEXT",
-        data: (node as TextNode).characters,
-      };
+      return (node as TextNode).characters;
     case "SHAPE_WITH_TEXT":
-      return {
-        type: "TEXT",
-        data: (node as ShapeWithTextNode).text.characters,
-      };
+      return (node as ShapeWithTextNode).text.characters;
     case "CODE_BLOCK":
-      return {
-        type: "TEXT",
-        data: (node as CodeBlockNode).code,
-      };
+      return (node as CodeBlockNode).code;
     case "LINK_UNFURL":
-      return {
-        type: "TEXT",
-        data: (node as LinkUnfurlNode).linkUnfurlData.url,
-      };
+      return (node as LinkUnfurlNode).linkUnfurlData.url;
     case "EMBED":
-      return {
-        type: "TEXT",
-        data: (node as EmbedNode).embedData.srcUrl,
-      };
+      return (node as EmbedNode).embedData.srcUrl;
     case "MEDIA":
     // TODO: Export correct format
   }
-  return {
-    type: "UNDEFINED",
-    data: "",
-  };
+  return "";
 }
+
+// export function getFileId(): string {
+//   const found = document.location.pathname.match(FILE_ID_REGEX);
+//   if (!found || !found[0]) {
+//     return "0";
+//   }
+//   return found[0];
+// }

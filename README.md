@@ -9,10 +9,6 @@ Built upon the work done by previous widgets, mainly Michael Bullington's Code N
 Open up the widget in a FigJam file, place it on top of a code block and try the following sample code:
 
 ```javascript
-// title: hello_world
-
-// imports here
-
 // Point an arrow from another code block to the line below.
 const input;
 
@@ -21,6 +17,21 @@ console.log('hello, world');
 // Point an arrow from the line below.
 const output = 'hello ' + input;
 ```
+
+Connector arrows are used to indicate the inputs and outputs of a given code block. Make sure to connect the arrow to the line where a variable is declared. Outputs can be connected to the "Jam Viewer" widget, other code blocks, or any component that supports text.
+
+The following functions are provided via the `figma.notebook` library:
+Javascript:
+
+```javascript
+function queryNodes(rootNode: { id: string } | string, selector?: string): Promise<any[]>
+function svgToString(svg: Element): string
+function stringToSVG(svgData: string): SVGSVGElement
+```
+
+You can also import any JS libraries present in the [Skypack CDN](https://www.skypack.dev/). Python libraries can be imported if they are pure Python wheels or built into Pyodide ([ref](https://micropip.pyodide.org/en/v0.2.2/project/api.html#micropip.install)).
+
+Go to [examples](./examples) to get some inspiration!
 
 ## Code organization
 

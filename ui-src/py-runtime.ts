@@ -1,4 +1,4 @@
-import { Obj } from "../shared/types";
+import { Endpoint } from "../shared/types";
 import { printErr } from "./utils";
 
 // import { loadPyodide } from 'https://pyodide-cdn2.iodide.io/v0.20.0/full/pyodide.mjs';
@@ -6,7 +6,12 @@ import { printErr } from "./utils";
 // Pyodide
 // Or https://openerp-web-v7.readthedocs.io/en/stable/
 
-export async function runPYScript(code: string, inputs: Obj[]): Promise<void> {
+export async function runPYScript(
+  code: string,
+  inputs: Endpoint[],
+  outputs: Endpoint[],
+  std: any
+): Promise<void> {
   // TODO: Will also need custom bundling to preload cython dependent libraries (numpy, etc) and use
   // micropip to install pure python libraries.
 

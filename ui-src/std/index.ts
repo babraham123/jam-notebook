@@ -3,11 +3,8 @@
  * 'figma.notebook'.
  */
 
-import { stringify as stringifyCSV } from "csv-stringify/sync";
-
-import { postMessage, setOutput, svgToString as stringifySVG } from "../utils";
-import { IFrameMessage, Obj } from "../../shared/types";
-
+import { postMessage, setOutput, svgToString, stringToSVG } from "../utils";
+import { IFrameMessage } from "../../shared/types";
 
 function queryNodes(node: { id: string }, selector: string): Promise<any[]>;
 function queryNodes(selector: string): Promise<any[]>;
@@ -45,79 +42,9 @@ function queryNodes(
   });
 }
 
-// Converts an Uint8Array, ArrayBuffer, Buffer or string to a base64 string. Encoding indicates
-// the string's encoding, defaults to 'binary'.
-function stringifyBytes(
-  data: Uint8Array | ArrayBuffer | Buffer | string,
-  encoding?: BufferEncoding
-): string {
-  if (!encoding) {
-    encoding = "binary";
-  }
-
-  if (data instanceof Uint8Array) {
-    // Uint8Array -> ArrayBuffer
-    data = data.buffer.slice(
-      data.byteOffset,
-      data.byteLength + data.byteOffset
-    );
-  }
-  if (typeof data === "string") {
-    return Buffer.from(data as string, encoding).toString("base64");
-  } else {
-    return Buffer.from(data).toString("base64");
-  }
+// 5MB limit on total stored data
+function storeResult(baseKey: string, lineNum: number, data: any) {
+  setOutput(baseKey, lineNum, JSON.stringify(data));
 }
 
-function storeAny(baseKey: string, lineNum: number, data: any) {
-  let obj: Obj;
-  if (
-    data instanceof Uint8Array ||
-    data instanceof ArrayBuffer ||
-    data instanceof Buffer
-  ) {
-    obj = {
-      type: "BINARY",
-      data: stringifyBytes(data),
-    };
-  } else if (typeof data === "string") {
-    obj = {
-      type: "TEXT",
-      data,
-    };
-  } else if (data instanceof Error) {
-    obj = {
-      type: "ERROR",
-      data: JSON.stringify(data),
-    };
-  } else if (data instanceof Element || data instanceof SVGSVGElement) {
-    obj = {
-      type: "SVG",
-      data: stringifySVG(data as Element),
-    };
-  } else if (
-    Array.isArray(data) &&
-    data.length > 0 &&
-    Array.isArray(data[0]) &&
-    data[0].length > 0 &&
-    typeof data[0][0] === "number"
-  ) {
-    obj = {
-      type: "CSV",
-      data: stringifyCSV(data),
-    };
-  } else if (data === undefined) {
-    obj = {
-      type: "UNDEFINED",
-      data: "",
-    };
-  } else {
-    obj = {
-      type: "JSON",
-      data: JSON.stringify(data),
-    };
-  }
-  setOutput(baseKey, lineNum, obj);
-}
-
-export { queryNodes, stringifyCSV, stringifySVG, storeAny };
+export { queryNodes, storeResult, svgToString, stringToSVG };
