@@ -7,6 +7,8 @@ export const PLUGIN_ID = "*"; // manifest.id; // TODO
 
 export const IFRAME_URL =
   "https://babraham123.github.io/jam-notebook/index.html";
+// Example test in browser:
+// window.postMessage({'pluginMessage': {'type': 'RUN', 'code': {'language': 'javascript', 'code': 'console.log("hello")'}}})
 
 export const INFO_URL = "https://github.com/babraham123/jam-notebook#readme";
 

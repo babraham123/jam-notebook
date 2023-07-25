@@ -1,4 +1,4 @@
-import parse from "parse-es-import";
+import parseJS from "parse-es-import";
 import { js as jsBeautify } from "js-beautify";
 
 import { JS_VAR_REGEX } from "../shared/constants";
@@ -17,17 +17,9 @@ export class WrappedError extends Error {
   }
 }
 
-function formatAsCode(data: any): string {
-  return `'${data}'`;
-}
-
-function parseInput(data: any): any {
-  return JSON.parse(data);
-}
-
 // Insert Skypack imports into the user's code.
 function replaceImports(code: string): string {
-  const imports = parse(code).imports;
+  const imports = parseJS(code).imports;
   let offset = 0;
   let newCode = `${code}`;
   for (const importObj of imports) {
@@ -125,20 +117,28 @@ export async function runJSScript(
   for (const libScript of libraries) {
     if (libScript.language === "javascript") {
       script = `${libScript.code}\n\n${script}`;
+    } else {
+      // TODO: add support for other languages in JS runtime
+      throw new Error(
+        `Trying to run ${libScript.language} code in JS runtime as a library`
+      );
     }
-    // TODO: add support for other languages in JS runtime
   }
   script = replaceImports(script);
-  script += "\nreturn Promise.resolve();\n";
+
+  const params = inputVars
+    .map((v, i) => `const ${v.altName} = __params__[${i}];`)
+    .join("\n");
+  const vals = inputVars.map((v) => v.value);
+
+  script = `${params}\n${script}\nreturn Promise.resolve();\n`;
   print(inputVars); // TODO: remove after validating iframe runner
   print(script);
 
-  const params = inputVars.map((v) => v.altName);
-  const func = new Function("figma", ...params, script);
+  const func = new Function("figma", "__params__", script);
 
-  const vals = inputVars.map((v) => v.value);
   try {
-    await func(figma, ...vals);
+    await func(figma, vals);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
     throw new WrappedError(err as Error, func);

@@ -1,7 +1,13 @@
 export function printErr(prefix: string, msg: any) {
-  console.error(`fig: ${prefix} ${JSON.stringify(msg)}`);
+  if (typeof msg === 'string') {
+    console.error(`jam: ${prefix} ${msg}`);
+  }
+  console.error(`jam: ${prefix} ${JSON.stringify(msg)}`);
 }
 
 export function print(prefix: string, msg: any) {
-  console.log(`fig: ${prefix} ${JSON.stringify(msg)}`);
+  if (typeof msg === 'string') {
+    console.log(`jam: ${prefix} ${msg}`);
+  }
+  console.log(`jam: ${prefix} ${JSON.stringify(msg)}`);
 }

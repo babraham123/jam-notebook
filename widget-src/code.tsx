@@ -188,9 +188,7 @@ function Widget() {
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");
-        if (msg.outputs) {
-          setOutputs(codeBlockId, msg.outputs);
-        }
+        setOutputs(codeBlockId, msg.outputs);
       } else {
         setResultStatus("ERROR");
         if (msg.error) {

@@ -22,8 +22,6 @@
   "dependencies": {
     "blob-util": "^2.0.2",
     "css-selector-parser": "^1.4.1",
-    "csv-parse": "^5.3.3",
-    "csv-stringify": "^6.2.3",
     "dom-to-image": "^2.6.0",
     "events": "^3.3.0",
     "html2canvas": "^1.4.1",

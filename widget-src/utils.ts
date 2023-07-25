@@ -235,7 +235,10 @@ export function getLibraries(node: SceneNode): Code[] {
   return libraries;
 }
 
-export function setOutputs(blockId: string, outputs: Endpoint[]) {
+export function setOutputs(blockId: string, outputs?: Endpoint[]) {
+  if (!outputs) {
+    return;
+  }
   const block = figma.getNodeById(blockId) as CodeBlockNode;
   if (!block) {
     return;
@@ -254,21 +257,26 @@ export function setOutputs(blockId: string, outputs: Endpoint[]) {
     const lineNum = parseInt(frame.getPluginData("lineNum"));
     let xOffset = block.x;
 
-    for (const cNode of frame.attachedConnectors) {
-      const start = cNode.connectorStart;
-      const end = cNode.connectorEnd;
-      if (!("endpointNodeId" in start) || start.endpointNodeId !== frame.id) {
+    for (const output of outputs) {
+      if (!output.shouldReturn) {
         continue;
       }
+      const value = JSON.stringify(output.node);
 
-      let value: string | undefined;
-      for (const output of outputs) {
+      let end: ConnectorEndpoint | undefined;
+      let connector: ConnectorNode | undefined;
+      for (const cNode of frame.attachedConnectors) {
+        const start = cNode.connectorStart;
+        end = cNode.connectorEnd;
+        if (!("endpointNodeId" in start) || start.endpointNodeId !== frame.id) {
+          continue;
+        }
         if (output.lineNum === lineNum) {
-          value = JSON.stringify(output.node);
+          connector = cNode;
           break;
         }
       }
-      if (!value) {
+      if (!connector || !end) {
         continue;
       }
       if ("endpointNodeId" in end) {
@@ -287,7 +295,7 @@ export function setOutputs(blockId: string, outputs: Endpoint[]) {
           endpointNodeId: node.id,
           magnet: "AUTO",
         };
-        cNode.connectorEnd = newEnd;
+        connector.connectorEnd = newEnd;
       }
     }
   }
