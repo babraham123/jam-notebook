@@ -18,6 +18,7 @@ export interface Endpoint {
   sourceId: string;
   destLineNum?: number;
   node?: any;
+  shouldReturn?: boolean;
 }
 
 export interface NodeQuery {
@@ -34,6 +35,7 @@ export interface IFrameMessage {
   status?: StatusType;
   code?: Code;
   inputs?: Endpoint[];
+  libraries?: Code[];
   outputs?: Endpoint[];
   widgetId?: string;
   nodeQuery?: NodeQuery;

@@ -1,9 +1,5 @@
 # Notes
 
-### Framework
-
-- inject inputs directly with aliased vars
-
 ### Python
 
 - pyodide
@@ -12,7 +8,7 @@
 ### Viewer
 
 - implement app,
-- output type def
+- detect type
 
 ### Typescript
 

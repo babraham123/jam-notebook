@@ -3,7 +3,7 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
-export const PLUGIN_ID = '*'; // manifest.id; // TODO
+export const PLUGIN_ID = "*"; // manifest.id; // TODO
 
 export const IFRAME_URL =
   "https://babraham123.github.io/jam-notebook/index.html";

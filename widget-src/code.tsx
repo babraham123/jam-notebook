@@ -15,14 +15,15 @@ const {
 
 import * as FigmaSelector from "./vendor/figma-selector";
 import {
+  addCodeBlock,
+  adjustFrames,
+  extractTitle,
+  loadFonts,
+  parseNode,
   print,
   printErr,
-  extractTitle,
-  adjustFrames,
   processFrames,
-  addCodeBlock,
-  parseNode,
-  removeOutputs,
+  setOutputs,
 } from "./utils";
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
@@ -104,7 +105,6 @@ function Widget() {
 
   useEffect(() => {
     const handleMsg = async (data: any, props: OnMessageProperties) => {
-      print(data);
       if (!data?.type || Object.keys(HANDLERS).indexOf(data.type) < 0) {
         return;
       }
@@ -146,7 +146,7 @@ function Widget() {
         },
       };
     } else if (resultStatus === "RUNNING") {
-      removeOutputs(codeBlockId);
+      // removeOutputs(codeBlockId);
       adjustFrames(codeBlockId);
       const io = await processFrames(codeBlockId);
       return {
@@ -156,6 +156,7 @@ function Widget() {
           code: block.code,
         },
         inputs: io.inputs,
+        libraries: io.libraries,
         outputs: io.outputs,
         widgetId,
       };
@@ -171,21 +172,11 @@ function Widget() {
   ): Promise<IFrameMessage | undefined> {
     closeIFrame();
     if (msg?.code && codeBlockId) {
-      await figma.loadFontAsync({ family: "Source Code Pro", style: "Medium" });
-      await figma.loadFontAsync({
-        family: "Source Code Pro",
-        style: "Medium Italic",
-      });
-      await figma.loadFontAsync({
-        family: "Source Code Pro",
-        style: "Regular",
-      });
+      await loadFonts();
       const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
       if (block) {
         block.code = msg.code.code;
         adjustFrames(codeBlockId);
-
-        block.visible = !block.visible; // TODO
       }
     }
     return undefined;
@@ -197,6 +188,9 @@ function Widget() {
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");
+        if (msg.outputs) {
+          setOutputs(codeBlockId, msg.outputs);
+        }
       } else {
         setResultStatus("ERROR");
         if (msg.error) {

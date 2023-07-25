@@ -1,9 +1,8 @@
 import parse from "parse-es-import";
-import { parse as parseCSV } from "csv-parse/sync";
 import { js as jsBeautify } from "js-beautify";
 
 import { JS_VAR_REGEX } from "../shared/constants";
-import { Endpoint } from "../shared/types";
+import { Code, Endpoint } from "../shared/types";
 import { getOutput, print } from "./utils";
 
 // This lets us access the execution environment from the error handler.
@@ -68,6 +67,8 @@ function replaceImports(code: string): string {
 interface Variable {
   keyword: string;
   name: string;
+  altName: string;
+  value?: any;
 }
 
 export function extractVariable(code: string): Variable {
@@ -78,12 +79,14 @@ export function extractVariable(code: string): Variable {
   return {
     keyword: found.groups.keyword,
     name: found.groups.name,
+    altName: `__${found.groups.name}__`,
   };
 }
 
 export async function runJSScript(
   code: string,
   inputs: Endpoint[],
+  libraries: Code[],
   outputs: Endpoint[],
   std: any
 ): Promise<void> {
@@ -92,48 +95,50 @@ export async function runJSScript(
   });
 
   const codeLines = code.split("\n");
+  const inputVars: Variable[] = [];
   for (const endpoint of inputs) {
-    print(endpoint); // TODO: remove after iframe runner
     if (!endpoint.destLineNum) {
       throw new Error(`No destination for input: ${JSON.stringify(endpoint)}`);
     }
     const variable = extractVariable(codeLines[endpoint.destLineNum]);
+    inputVars.push(variable);
+
     if (endpoint.node) {
-      codeLines[endpoint.destLineNum] = `${variable.keyword} ${
-        variable.name
-      } = ${JSON.stringify(endpoint.node)};`;
+      variable.value = JSON.stringify(endpoint.node);
       continue;
     }
-
-    const input = getOutput(endpoint.sourceId, endpoint.lineNum);
-    if (!input) {
-      throw new Error(`Input not found: ${JSON.stringify(endpoint)}`);
-    }
-    // TODO: Use alias var (__name__) to pass in var by value
-    const inputCode = formatAsCode(input);
+    variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
     codeLines[
       endpoint.destLineNum
-    ] = `${variable.keyword} ${variable.name} = ${inputCode};`;
+    ] = `${variable.keyword} ${variable.name} = ${variable.altName};`;
   }
 
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum]);
+    // Store final result
     codeLines.push(
       `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`
     );
   }
 
-  const runFunc = replaceImports(codeLines.join("\n"));
+  let script = codeLines.join("\n");
+  for (const libScript of libraries) {
+    if (libScript.language === "javascript") {
+      script = `${libScript.code}\n\n${script}`;
+    }
+    // TODO: add support for other languages in JS runtime
+  }
+  script = replaceImports(script);
+  script += "\nreturn Promise.resolve();\n";
+  print(inputVars); // TODO: remove after validating iframe runner
+  print(script);
 
-  const script = `
-    ${runFunc}
-    return Promise.resolve();
-`;
-  print(script); // TODO: remove after validating iframe runner
-  const func = new Function("figma", script);
+  const params = inputVars.map((v) => v.altName);
+  const func = new Function("figma", ...params, script);
 
+  const vals = inputVars.map((v) => v.value);
   try {
-    await func(figma, script);
+    await func(figma, ...vals);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
     throw new WrappedError(err as Error, func);

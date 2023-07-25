@@ -1,7 +1,12 @@
 import * as std from "./std";
 import { runJSScript, formatJSScript } from "./js-runtime";
-import { IFrameMessage, CommandType, ErrorLike } from "../shared/types";
-import { postMessage, print, printErr, setOutput, clearOutputs } from "./utils";
+import {
+  IFrameMessage,
+  CommandType,
+  ErrorLike,
+  Endpoint,
+} from "../shared/types";
+import { postMessage, print, printErr, getOutput, clearOutputs } from "./utils";
 
 // Handlers return the msg that will be sent back to the widget. Type undefined
 // will be ignored.
@@ -49,6 +54,7 @@ async function runHandler(
         await runJSScript(
           msg.code?.code ?? "",
           msg.inputs ?? [],
+          msg.libraries ?? [],
           msg.outputs ?? [],
           std
         );
@@ -60,9 +66,18 @@ async function runHandler(
           stack: "",
         });
     }
+
+    const outputs: Endpoint[] = [];
+    for (const output of msg.outputs ?? []) {
+      if (output.shouldReturn) {
+        output.node = getOutput(output.sourceId, output.lineNum);
+        outputs.push(output);
+      }
+    }
     return {
       type: "RUN",
       status: "SUCCESS",
+      outputs,
     };
   } catch (err: any) {
     return getErrorMsg("RUN", {

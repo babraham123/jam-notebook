@@ -14,7 +14,6 @@ export function postMessage(msg: IFrameMessage) {
   // const val = new URLSearchParams(document.location.search).get("source");
   // const source = val ? decodeURIComponent(val) : "*";
   const data = { pluginMessage: msg, pluginId: PLUGIN_ID };
-  print(data);
   parent.postMessage(data, "https://www.figma.com");
   parent.postMessage(data, "https://staging.figma.com");
 }

@@ -22,7 +22,8 @@ export const metrics = {
   infoIconSize: 16,
 
   textHeight: 23,
-  textOffset: 5,
+  textOffset: 16,
+  textBoxWidth: 300,
 };
 
 export const colors = {

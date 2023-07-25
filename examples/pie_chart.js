@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/pie-chart
-const PieChart = (data, {
+function PieChart(data, {
   name = ([x]) => x,  // given d in data, returns the (ordinal) label
   value = ([, y]) => y, // given d in data, returns the (quantitative) value
   title, // given d in data, returns the title text
@@ -19,7 +19,7 @@ const PieChart = (data, {
   strokeWidth = 1, // width of stroke separating wedges
   strokeLinejoin = "round", // line join of stroke separating wedges
   padAngle = stroke === "none" ? 1 / outerRadius : 0, // angular separation between wedges
-} = {}) => {
+} = {}) {
   // Compute values.
   const N = d3.map(data, name);
   const V = d3.map(data, value);
