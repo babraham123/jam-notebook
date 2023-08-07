@@ -125,20 +125,16 @@ export async function runJSScript(
     }
   }
   script = replaceImports(script);
-
-  const params = inputVars
-    .map((v, i) => `const ${v.altName} = __params__[${i}];`)
-    .join("\n");
-  const vals = inputVars.map((v) => v.value);
-
-  script = `${params}\n${script}\nreturn Promise.resolve();\n`;
+  script = `${script}\nreturn Promise.resolve();\n`;
   print(inputVars); // TODO: remove after validating iframe runner
   print(script);
 
-  const func = new Function("figma", "__params__", script);
+  const params = inputVars.map((v) => v.altName);
+  const vals = inputVars.map((v) => v.value);
+  const func = new Function("figma", ...params, script);
 
   try {
-    await func(figma, vals);
+    await func(figma, ...vals);
   } catch (err) {
     // Rethrow, just wrap the error with relevant information.
     throw new WrappedError(err as Error, func);

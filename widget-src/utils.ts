@@ -52,7 +52,7 @@ function setTextValue(nodeId: string, value: string) {
   }
 }
 
-function getGroup(blockId: string): GroupNode | undefined {
+function getGroup(blockId?: string): GroupNode | undefined {
   let group: GroupNode | undefined;
   if (!blockId) {
     return undefined;
@@ -65,6 +65,15 @@ function getGroup(blockId: string): GroupNode | undefined {
       }
     });
   return group;
+}
+
+function getFrames(blockId?: string): FrameNode[] {
+  if (!blockId) {
+    return [];
+  }
+  return figma.currentPage
+    .findAllWithCriteria({ types: ["FRAME"] })
+    .filter((node) => node.getPluginData("blockId") === blockId);
 }
 
 export function adjustFrames(blockId: string) {
@@ -89,13 +98,12 @@ export function adjustFrames(blockId: string) {
   });
 
   const existing = new Set<number>();
-  group.children.forEach((child) => {
-    if (child.type !== "FRAME") {
-      return;
-    }
-    const frame = child as FrameNode;
+  const frames = getFrames(blockId);
+  const childIds = group.children.map((child) => child.id);
+  frames.forEach((frame) => {
     const str = frame.getPluginData("lineNum");
     if (!str) {
+      frame.remove();
       return;
     }
     const lineNum = parseInt(str);
@@ -103,10 +111,17 @@ export function adjustFrames(blockId: string) {
       frame.remove();
       return;
     }
+    if (childIds.indexOf(frame.id) < 0) {
+      group?.appendChild(frame);
+    }
     existing.add(lineNum);
+
+    // Update in case code block was moved
     if (frame.width !== block.width - 2 * metrics.textOffset) {
       frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
     }
+    frame.x = block.x + metrics.textOffset;
+    frame.y = block.y + (lineNum + 1) * metrics.textHeight;
   });
 
   const newDecls = new Set([...decls].filter((i) => !existing.has(i)));
@@ -138,18 +153,22 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
   libraries = getLibraries(block);
 
   const group = getGroup(blockId);
-  if (!group) {
-    return { inputs, libraries, outputs };
+  if (group) {
+    libraries = libraries.concat(getLibraries(group));
   }
-  libraries = libraries.concat(getLibraries(block));
 
   // Connectors attached to frames
-  for (const child of group.children) {
+  const frames = getFrames(blockId);
+  for (const child of frames) {
     if (child.type !== "FRAME") {
       continue;
     }
     const frame = child as FrameNode;
-    const lineNum = parseInt(frame.getPluginData("lineNum"));
+    const str = frame.getPluginData("lineNum");
+    if (!str) {
+      continue;
+    }
+    const lineNum = parseInt(str);
 
     for (const cNode of frame.attachedConnectors) {
       const start = cNode.connectorStart;
@@ -190,7 +209,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
               destLineNum: lineNum,
             });
             continue;
-          }
+          } // else fall through
         }
         const data = await node.exportAsync({
           format: "JSON_REST_V1",
@@ -217,7 +236,8 @@ export function getLibraries(node: SceneNode): Code[] {
     if (
       !("endpointNodeId" in start) ||
       !("endpointNodeId" in end) ||
-      end.endpointNodeId !== node.id
+      end.endpointNodeId !== node.id ||
+      start.endpointNodeId === node.id
     ) {
       continue;
     }

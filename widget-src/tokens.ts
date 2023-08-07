@@ -22,7 +22,7 @@ export const metrics = {
   infoIconSize: 16,
 
   textHeight: 23,
-  textOffset: 16,
+  textOffset: 1, // 16
   textBoxWidth: 300,
 };
 
