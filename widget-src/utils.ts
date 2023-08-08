@@ -181,7 +181,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
           sourceId: blockId,
           lineNum,
         };
-        if ("endpointNodeId" in end) {
+        if ("endpointNodeId" in end && end.endpointNodeId) {
           // update
           const node = figma.getNodeById(end.endpointNodeId) as SceneNode;
           if (node && TEXT_NODE_TYPES.indexOf(node.type) > -1) {
@@ -269,47 +269,45 @@ export function setOutputs(blockId: string, outputs?: Endpoint[]) {
   const frames = getFrames(blockId);
   for (const frame of frames) {
     const lineNum = parseInt(frame.getPluginData("lineNum"));
-    let xOffset = block.x;
 
     for (const output of outputs) {
       if (!output.shouldReturn) {
         continue;
       }
+      if (output.lineNum !== lineNum) {
+        continue;
+      }
       const value = JSON.stringify(output.node);
 
-      let end: ConnectorEndpoint | undefined;
-      let connector: ConnectorNode | undefined;
       for (const cNode of frame.attachedConnectors) {
         const start = cNode.connectorStart;
-        end = cNode.connectorEnd;
+        const end = cNode.connectorEnd;
         if (!("endpointNodeId" in start) || start.endpointNodeId !== frame.id) {
           continue;
         }
-        if (output.lineNum === lineNum) {
-          connector = cNode;
-          break;
+        // Write output value
+        if ("endpointNodeId" in end && end.endpointNodeId) {
+          setTextValue(end.endpointNodeId, value);
+        } else {
+          const node = figma.createText();
+          node.characters = value;
+          if ("position" in end) {
+            node.x = end.position.x;
+            node.y = end.position.y - node.height / 2;
+          } else {
+            node.x = block.x + metrics.resultSpacing;
+            node.y = frame.y;
+          }
+          // node.resize(metrics.textBoxWidth, metrics.textBoxWidth);
+          // node.fills = [];
+          figma.currentPage.appendChild(node);
+          //figma.connect(node, cNode, figma.currentPage);
+          const newEnd: ConnectorEndpointEndpointNodeIdAndMagnet = {
+            endpointNodeId: node.id,
+            magnet: "LEFT",
+          };
+          cNode.connectorEnd = newEnd;
         }
-      }
-      if (!connector || !end) {
-        continue;
-      }
-      if ("endpointNodeId" in end) {
-        setTextValue(end.endpointNodeId, value);
-      } else {
-        const node = figma.createText();
-        node.characters = value;
-        node.x = xOffset + metrics.resultSpacing;
-        node.y = frame.y;
-        // node.resize(metrics.textBoxWidth, metrics.textBoxWidth);
-        xOffset = node.x + node.width;
-        // node.fills = [];
-        figma.currentPage.appendChild(node);
-        //figma.connect(node, cNode, figma.currentPage);
-        const newEnd: ConnectorEndpointEndpointNodeIdAndMagnet = {
-          endpointNodeId: node.id,
-          magnet: "AUTO",
-        };
-        connector.connectorEnd = newEnd;
       }
     }
   }

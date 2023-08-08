@@ -68,6 +68,7 @@ async function runHandler(
     }
 
     const outputs: Endpoint[] = [];
+    print(msg.outputs); // TODO: remove after validating iframe runner
     for (const output of msg.outputs ?? []) {
       if (output.shouldReturn) {
         output.node = getOutput(output.sourceId, output.lineNum);
