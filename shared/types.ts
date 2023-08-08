@@ -14,7 +14,7 @@ export interface Code {
 }
 
 export interface Endpoint {
-  lineNum: number;
+  lineNum: number; // 1 indexed to match UI
   sourceId: string;
   destLineNum?: number;
   node?: any;

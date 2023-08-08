@@ -92,21 +92,21 @@ export async function runJSScript(
     if (!endpoint.destLineNum) {
       throw new Error(`No destination for input: ${JSON.stringify(endpoint)}`);
     }
-    const variable = extractVariable(codeLines[endpoint.destLineNum]);
+    const variable = extractVariable(codeLines[endpoint.destLineNum - 1]);
     inputVars.push(variable);
 
     if (endpoint.node) {
-      variable.value = JSON.stringify(endpoint.node);
+      variable.value = endpoint.node;
       continue;
     }
     variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
     codeLines[
-      endpoint.destLineNum
+      endpoint.destLineNum - 1
     ] = `${variable.keyword} ${variable.name} = ${variable.altName};`;
   }
 
   for (const endpoint of outputs) {
-    const variable = extractVariable(codeLines[endpoint.lineNum]);
+    const variable = extractVariable(codeLines[endpoint.lineNum - 1]);
     // Store final result
     codeLines.push(
       `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`

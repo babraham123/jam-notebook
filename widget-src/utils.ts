@@ -93,7 +93,7 @@ export function adjustFrames(blockId: string) {
   const decls = new Set<number>();
   block.code.split("\n").forEach((line, i) => {
     if (JS_VAR_REGEX.test(line)) {
-      decls.add(i);
+      decls.add(i + 1);
     }
   });
 
@@ -101,12 +101,11 @@ export function adjustFrames(blockId: string) {
   const frames = getFrames(blockId);
   const childIds = group.children.map((child) => child.id);
   frames.forEach((frame) => {
-    const str = frame.getPluginData("lineNum");
-    if (!str) {
+    const lineNum = parseInt(frame.getPluginData("lineNum"));
+    if (!lineNum) {
       frame.remove();
       return;
     }
-    const lineNum = parseInt(str);
     if (!decls.has(lineNum)) {
       frame.remove();
       return;
@@ -116,26 +115,28 @@ export function adjustFrames(blockId: string) {
     }
     existing.add(lineNum);
 
-    // Update in case code block was moved
-    if (frame.width !== block.width - 2 * metrics.textOffset) {
-      frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
-    }
-    frame.x = block.x + metrics.textOffset;
-    frame.y = block.y + (lineNum + 1) * metrics.textHeight;
+    // In case code block was moved
+    updateFrame(frame, block, lineNum);
   });
 
   const newDecls = new Set([...decls].filter((i) => !existing.has(i)));
   newDecls.forEach((lineNum) => {
     const frame = figma.createFrame();
-    frame.x = block.x + metrics.textOffset;
-    frame.y = block.y + (lineNum + 1) * metrics.textHeight;
-    frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
     frame.setPluginData("lineNum", lineNum.toString());
     frame.setPluginData("blockId", block.id);
     // frame.visible = false;
     frame.fills = [];
+    updateFrame(frame, block, lineNum);
     group?.appendChild(frame);
   });
+}
+
+function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
+  if (frame.width !== block.width - 2 * metrics.textOffset) {
+    frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
+  }
+  frame.x = block.x + metrics.textOffset;
+  frame.y = block.y + lineNum * metrics.textHeight;
 }
 
 // adjustFrames must be called before this
@@ -164,11 +165,10 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
       continue;
     }
     const frame = child as FrameNode;
-    const str = frame.getPluginData("lineNum");
-    if (!str) {
+    const lineNum = parseInt(frame.getPluginData("lineNum"));
+    if (!lineNum) {
       continue;
     }
-    const lineNum = parseInt(str);
 
     for (const cNode of frame.attachedConnectors) {
       const start = cNode.connectorStart;
@@ -220,6 +220,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
           destLineNum: lineNum,
           node: data as any,
         });
+        continue;
       }
       printErr("Unknown connector");
     }
@@ -263,17 +264,10 @@ export function setOutputs(blockId: string, outputs?: Endpoint[]) {
   if (!block) {
     return;
   }
-  const group = getGroup(blockId);
-  if (!group) {
-    return;
-  }
 
   // Connectors attached to frames
-  for (const child of group.children) {
-    if (child.type !== "FRAME") {
-      continue;
-    }
-    const frame = child as FrameNode;
+  const frames = getFrames(blockId);
+  for (const frame of frames) {
     const lineNum = parseInt(frame.getPluginData("lineNum"));
     let xOffset = block.x;
 
