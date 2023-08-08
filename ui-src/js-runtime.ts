@@ -97,9 +97,9 @@ export async function runJSScript(
 
     if (endpoint.node) {
       variable.value = endpoint.node;
-      continue;
+    } else {
+      variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
     }
-    variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
     codeLines[
       endpoint.destLineNum - 1
     ] = `${variable.keyword} ${variable.name} = ${variable.altName};`;

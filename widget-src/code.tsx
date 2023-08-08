@@ -186,7 +186,7 @@ function Widget() {
     if (msg?.status) {
       if (msg.status === "SUCCESS") {
         setResultStatus("SUCCESS");
-        setOutputs(codeBlockId, msg.outputs);
+        await setOutputs(codeBlockId, msg.outputs);
       } else {
         setResultStatus("ERROR");
         if (msg.error) {

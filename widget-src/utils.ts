@@ -1,5 +1,5 @@
-import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
-import { JS_VAR_REGEX } from "../shared/constants";
+import { print as subPrint, printErr as subPrintErr, anyToStr } from "../shared/utils";
+import { JS_VAR_REGEX, NULL_ID } from "../shared/constants";
 import { metrics } from "./tokens";
 import { Code, Endpoint } from "../shared/types";
 
@@ -28,7 +28,7 @@ const TEXT_NODE_TYPES = [
   "EMBED",
 ];
 
-function setTextValue(nodeId: string, value: string) {
+async function setTextValue(nodeId: string, value: string) {
   const node = figma.getNodeById(nodeId);
   switch (node?.type) {
     case "TEXT":
@@ -41,6 +41,7 @@ function setTextValue(nodeId: string, value: string) {
       node.text.characters = value;
       break;
     case "CODE_BLOCK":
+      await loadFonts();
       node.code = value;
       break;
     case "LINK_UNFURL":
@@ -97,9 +98,12 @@ export function adjustFrames(blockId: string) {
     }
   });
 
-  const existing = new Set<number>();
+  const childIds = new Set<string>();
+  group.children.forEach((child) => childIds.add(child.id));
+  print([...childIds]);
+
+  const existingDecls = new Set<number>();
   const frames = getFrames(blockId);
-  const childIds = group.children.map((child) => child.id);
   frames.forEach((frame) => {
     const lineNum = parseInt(frame.getPluginData("lineNum"));
     if (!lineNum) {
@@ -110,16 +114,15 @@ export function adjustFrames(blockId: string) {
       frame.remove();
       return;
     }
-    if (childIds.indexOf(frame.id) < 0) {
+    if (!childIds.has(frame.id)) {
       group?.appendChild(frame);
     }
-    existing.add(lineNum);
-
+    existingDecls.add(lineNum);
     // In case code block was moved
     updateFrame(frame, block, lineNum);
   });
 
-  const newDecls = new Set([...decls].filter((i) => !existing.has(i)));
+  const newDecls = new Set([...decls].filter((i) => !existingDecls.has(i)));
   newDecls.forEach((lineNum) => {
     const frame = figma.createFrame();
     frame.setPluginData("lineNum", lineNum.toString());
@@ -132,9 +135,7 @@ export function adjustFrames(blockId: string) {
 }
 
 function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
-  if (frame.width !== block.width - 2 * metrics.textOffset) {
-    frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
-  }
+  frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
   frame.x = block.x + metrics.textOffset;
   frame.y = block.y + lineNum * metrics.textHeight;
 }
@@ -160,11 +161,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
 
   // Connectors attached to frames
   const frames = getFrames(blockId);
-  for (const child of frames) {
-    if (child.type !== "FRAME") {
-      continue;
-    }
-    const frame = child as FrameNode;
+  for (const frame of frames) {
     const lineNum = parseInt(frame.getPluginData("lineNum"));
     if (!lineNum) {
       continue;
@@ -173,15 +170,24 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
     for (const cNode of frame.attachedConnectors) {
       const start = cNode.connectorStart;
       const end = cNode.connectorEnd;
-      if (!("endpointNodeId" in start)) {
+      if (
+        !("endpointNodeId" in start) ||
+        !start.endpointNodeId ||
+        start.endpointNodeId === NULL_ID
+      ) {
         continue;
       }
+      // output connector
       if (start.endpointNodeId === frame.id) {
         const output: Endpoint = {
           sourceId: blockId,
           lineNum,
         };
-        if ("endpointNodeId" in end && end.endpointNodeId) {
+        if (
+          "endpointNodeId" in end &&
+          end.endpointNodeId &&
+          end.endpointNodeId !== NULL_ID
+        ) {
           // update
           const node = figma.getNodeById(end.endpointNodeId) as SceneNode;
           if (node && TEXT_NODE_TYPES.indexOf(node.type) > -1) {
@@ -194,6 +200,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
         outputs.push(output);
         continue;
       }
+      // input connector
       if ("endpointNodeId" in end && end.endpointNodeId === frame.id) {
         const node = figma.getNodeById(start.endpointNodeId) as SceneNode;
         if (!node) {
@@ -211,14 +218,11 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
             continue;
           } // else fall through
         }
-        const data = await node.exportAsync({
-          format: "JSON_REST_V1",
-        });
         inputs.push({
           sourceId: node.id,
           lineNum: 0,
           destLineNum: lineNum,
-          node: data as any,
+          node: await parseNode(node),
         });
         continue;
       }
@@ -256,7 +260,7 @@ export function getLibraries(node: SceneNode): Code[] {
   return libraries;
 }
 
-export function setOutputs(blockId: string, outputs?: Endpoint[]) {
+export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
   if (!outputs) {
     return;
   }
@@ -277,7 +281,7 @@ export function setOutputs(blockId: string, outputs?: Endpoint[]) {
       if (output.lineNum !== lineNum) {
         continue;
       }
-      const value = JSON.stringify(output.node);
+      const value = anyToStr(output.node);
 
       for (const cNode of frame.attachedConnectors) {
         const start = cNode.connectorStart;
@@ -286,8 +290,12 @@ export function setOutputs(blockId: string, outputs?: Endpoint[]) {
           continue;
         }
         // Write output value
-        if ("endpointNodeId" in end && end.endpointNodeId) {
-          setTextValue(end.endpointNodeId, value);
+        if (
+          "endpointNodeId" in end &&
+          end.endpointNodeId &&
+          end.endpointNodeId !== NULL_ID
+        ) {
+          await setTextValue(end.endpointNodeId, value);
         } else {
           const node = figma.createText();
           node.characters = value;
@@ -458,10 +466,14 @@ export function getNamedNodeModules(): NamedCanvasNodeImports {
   return modules;
 }
 
-export async function parseNode(node: SceneNode): Promise<Object> {
-  return await node.exportAsync({
+export async function parseNode(node: SceneNode): Promise<any> {
+  const obj = await node.exportAsync({
     format: "JSON_REST_V1",
   });
+  if ("document" in obj) {
+    return obj.document;
+  }
+  return obj;
 }
 
 export function serializeNode(

@@ -12,6 +12,8 @@ export const IFRAME_URL =
 
 export const INFO_URL = "https://github.com/babraham123/jam-notebook#readme";
 
+export const NULL_ID = "0:1";
+
 export const JS_VAR_REGEX =
   /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
 
