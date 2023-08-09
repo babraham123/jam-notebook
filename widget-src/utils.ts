@@ -143,7 +143,7 @@ export function adjustFrames(blockId: string) {
   newDecls.forEach((lineNum) => {
     const frame = figma.createFrame();
     frame.setPluginData("lineNum", lineNum.toString());
-    frame.setPluginData("blockId", block.id);
+    frame.setPluginData("blockId", blockId);
     // frame.visible = false;
     frame.fills = [];
     updateFrame(frame, block, lineNum);
@@ -155,6 +155,22 @@ function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
   frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
   frame.x = block.x + metrics.textOffset;
   frame.y = block.y + lineNum * metrics.textHeight;
+}
+
+function isConnected(endpoint: ConnectorEndpoint): boolean {
+  if (!("endpointNodeId" in endpoint)) {
+    return false;
+  }
+  if (endpoint.endpointNodeId === NULL_ID) {
+    return false;
+  }
+  if ("magnet" in endpoint && endpoint.magnet === "NONE") {
+    return false;
+  }
+  if (!figma.getNodeById(endpoint.endpointNodeId)) {
+    return false;
+  }
+  return true;
 }
 
 // adjustFrames must be called before this
@@ -187,11 +203,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
     for (const cNode of frame.attachedConnectors) {
       const start = cNode.connectorStart;
       const end = cNode.connectorEnd;
-      if (
-        !("endpointNodeId" in start) ||
-        !start.endpointNodeId ||
-        start.endpointNodeId === NULL_ID
-      ) {
+      if (!("endpointNodeId" in start) || !isConnected(start)) {
         continue;
       }
       // output connector
@@ -200,11 +212,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
           sourceId: blockId,
           lineNum,
         };
-        if (
-          "endpointNodeId" in end &&
-          end.endpointNodeId &&
-          end.endpointNodeId !== NULL_ID
-        ) {
+        if ("endpointNodeId" in end && isConnected(end)) {
           // update
           const node = figma.getNodeById(end.endpointNodeId) as SceneNode;
           if (node && TEXT_NODE_TYPES.indexOf(node.type) > -1) {
@@ -306,11 +314,7 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
           continue;
         }
         // Write output value
-        if (
-          "endpointNodeId" in end &&
-          end.endpointNodeId &&
-          end.endpointNodeId !== NULL_ID
-        ) {
+        if ("endpointNodeId" in end && isConnected(end)) {
           await setTextValue(end.endpointNodeId, output.node);
         } else {
           const node = figma.createText();
@@ -325,7 +329,7 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
           // node.resize(metrics.textBoxWidth, metrics.textBoxWidth);
           // node.fills = [];
           figma.currentPage.appendChild(node);
-          //figma.connect(node, cNode, figma.currentPage);
+          // figma.connect(node, cNode, figma.currentPage);
           const newEnd: ConnectorEndpointEndpointNodeIdAndMagnet = {
             endpointNodeId: node.id,
             magnet: "LEFT",

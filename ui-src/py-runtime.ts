@@ -83,7 +83,7 @@ export async function runPYScript(
   }
 
   await loadImports(script, pyodide);
-  await pyodide.runPythonAsync(code);
+  await pyodide.runPythonAsync(script);
 
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum - 1], "python");
@@ -107,7 +107,7 @@ result = black.format_file_contents(code, fast=True, mode=black.Mode())
 export async function formatPYScript(code: string): Promise<string> {
   const pyodide = await loadPyodide();
   pyodide.globals.set("code", code);
-  
+
   await pyodide.loadPackage("micropip");
   await pyodide.runPythonAsync(FORMAT_CODE);
   // Should already be a string and not need toJs()

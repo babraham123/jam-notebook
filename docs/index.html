@@ -62,7 +62,7 @@ return Promise.resolve();
 `);for(const x of e){if(!x.destLineNum)throw new Error(`No destination for input: ${JSON.stringify(x)}`);const v=Ot(o[x.destLineNum-1],"python");x.node?v.value=x.node:v.value=le(x.sourceId,x.lineNum),o[x.destLineNum-1]=`${v.name} = ${v.altName};`,h.globals.set(v.altName,v.value)}let l=o.join(`
 `);for(const x of s)if(x.language==="python")l=`${x.code}
 
-${l}`;else throw new Error(`Trying to run ${x.language} code in PY runtime as a library`);mt(h.globals.toString()),mt(l),await fa(l,h),await h.runPythonAsync(t);for(const x of i){const v=Ot(o[x.lineNum-1],"python");let b=h.globals.get(v.name);b?.toJs&&(b=b.toJs()),n.notebook.storeResult(x.sourceId,x.lineNum,b)}}const da=`
+${l}`;else throw new Error(`Trying to run ${x.language} code in PY runtime as a library`);mt(h.globals.toString()),mt(l),await fa(l,h),await h.runPythonAsync(l);for(const x of i){const v=Ot(o[x.lineNum-1],"python");let b=h.globals.get(v.name);b?.toJs&&(b=b.toJs()),n.notebook.storeResult(x.sourceId,x.lineNum,b)}}const da=`
 import micropip
 micropip.install('black')
 import black
