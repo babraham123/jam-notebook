@@ -1,3 +1,6 @@
+// @ts-ignore
+import { loadPyodide } from 'https://cdn.jsdelivr.net/npm/pyodide@0.23.4/+esm';
+
 import { Code, Endpoint } from "../shared/types";
 import { getOutput, extractVariable } from "./utils";
 
@@ -38,7 +41,6 @@ export async function runPYScript(
   const figma = {
     notebook: std,
   };
-  // @ts-ignore
   const pyodide = await loadPyodide();
   pyodide.registerJsModule("figma", figma);
 
@@ -92,7 +94,6 @@ micropip.install('black')
 import black
 black.format_file_contents(code, False, black.Mode())
   `;
-  // @ts-ignore
   const pyodide = await loadPyodide();
   pyodide.globals.set("code", code);
   return await pyodide.runPythonAsync(wrappedCode);
