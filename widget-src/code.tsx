@@ -32,6 +32,7 @@ import {
   DEFAULT_TITLE,
   IFRAME_URL,
   INFO_URL,
+  JAM_DEBUG,
 } from "../shared/constants";
 import { icons } from "../shared/icons";
 
@@ -108,11 +109,14 @@ function Widget() {
         return;
       }
       const msg = data as IFrameMessage;
-      if (msg.debug) {
-        print(`msg ${msg.type}, origin: ${props.origin}, debug: ${msg.debug}`);
+      if (msg.debug || JAM_DEBUG) {
+        print(msg);
       }
       const resp = await HANDLERS[msg.type as CommandType](msg);
       if (resp) {
+        if (JAM_DEBUG) {
+          resp.debug = "t";
+        }
         figma.ui.postMessage(resp, { origin: IFRAME_URL });
       }
     };
@@ -171,9 +175,9 @@ function Widget() {
   ): Promise<IFrameMessage | undefined> {
     closeIFrame();
     if (msg?.code && codeBlockId) {
-      await loadFonts();
       const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
       if (block) {
+        await loadFonts();
         block.code = msg.code.code;
         adjustFrames(codeBlockId);
       }
@@ -197,9 +201,10 @@ function Widget() {
         }
       }
     }
+    // Allow time for iframe to save results and send other msgs
     setTimeout(function () {
       closeIFrame();
-    }, 1000);
+    }, 500);
     return undefined;
   }
 
@@ -254,7 +259,7 @@ function Widget() {
 
   function startIFrame(): Promise<void> {
     return new Promise((resolve) => {
-      // const url = `${IFRAME_URL}?source=${encodeURIComponent( // @ts-expect-error
+      // const url = `${IFRAME_URL}?source=${encodeURIComponent( //@ts-expect-error
       //   document.location.origin
       // )}`;
       figma.showUI(`<script>window.location.href = "${IFRAME_URL}"</script>`, {

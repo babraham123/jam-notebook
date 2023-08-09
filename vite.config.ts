@@ -22,7 +22,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 100000000,
     cssCodeSplit: false,
     reportCompressedSize: false,
-    outDir: "../dist",
+    outDir: "../docs",
     rollupOptions: {
       output: {
         inlineDynamicImports: true,

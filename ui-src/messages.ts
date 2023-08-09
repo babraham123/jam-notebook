@@ -144,7 +144,7 @@ async function formatHandler(
 // Do some processing and then return the result to the React component.
 export async function handleMessage(msg: IFrameMessage): Promise<void> {
   if (msg.debug) {
-    print(`msg ${msg.type} debug: ${msg.debug}`);
+    print(msg);
   }
   if (Object.keys(HANDLERS).indexOf(msg.type) < 0) {
     return;

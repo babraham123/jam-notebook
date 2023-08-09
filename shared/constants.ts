@@ -3,6 +3,8 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
+export let JAM_DEBUG = false;
+
 export const PLUGIN_ID = "*"; // manifest.id; // TODO
 
 export const IFRAME_URL =

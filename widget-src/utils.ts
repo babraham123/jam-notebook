@@ -118,7 +118,6 @@ export function adjustFrames(blockId: string) {
       childIds.add(child.id);
     }
   });
-  print([...childIds]);
 
   const existingDecls = new Set<number>();
   const frames = getFrames(blockId);
