@@ -59,7 +59,7 @@ export async function runPYScript(
     if (endpoint.node) {
       variable.value = endpoint.node;
     } else {
-      variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
+      variable.value = getOutput(endpoint.sourceId, endpoint.srcLineNum);
     }
     codeLines[
       endpoint.destLineNum - 1
@@ -87,14 +87,17 @@ export async function runPYScript(
   await pyodide.runPythonAsync(script);
 
   for (const endpoint of outputs) {
-    const variable = extractVariable(codeLines[endpoint.lineNum - 1], "python");
+    const variable = extractVariable(
+      codeLines[endpoint.srcLineNum - 1],
+      "python"
+    );
     // Store final result
     // TODO: consider using altName in case var is not in global scope
     let val = pyodide.globals.get(variable.name);
     if (val?.toJs) {
       val = val.toJs();
     }
-    figma.notebook.storeResult(endpoint.sourceId, endpoint.lineNum, val);
+    figma.notebook.storeResult(endpoint.sourceId, endpoint.srcLineNum, val);
   }
 }
 

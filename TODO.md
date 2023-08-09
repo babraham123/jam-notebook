@@ -1,13 +1,15 @@
-# Notes
+# ToDos
 
-### Python
+### Snowflake
 
-- pyodide
-- black formatter
+- implement app
+- cross app IO
+- edit SQL via code block
+- support table format
 
 ### Viewer
 
-- implement app,
+- implement app
 - detect type
 
 ### Typescript
