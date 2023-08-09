@@ -20,19 +20,14 @@
   "author": "Bereket Abraham <babraham42@gmail.com>",
   "license": "MIT License",
   "dependencies": {
-    "blob-util": "^2.0.2",
     "css-selector-parser": "^1.4.1",
-    "dom-to-image": "^2.6.0",
     "events": "^3.3.0",
-    "html2canvas": "^1.4.1",
     "js-beautify": "^1.14.8",
-    "parse-es-import": "github:babraham123/parse-es-import#de79796aa697d196c4f3c5eb8a268457a7958a10",
-    "pretty-format": "^28.1.1"
+    "parse-es-import": "github:babraham123/parse-es-import#de79796aa697d196c4f3c5eb8a268457a7958a10"
   },
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "@figma/widget-typings": "*",
-    "@types/dom-to-image": "^2.6.4",
     "@types/events": "^3.0.0",
     "@types/js-beautify": "^1.13.3",
     "@types/node": "^16.17.1",

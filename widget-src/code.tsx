@@ -22,6 +22,7 @@ import {
   printErr,
   processFrames,
   setOutputs,
+  getLang,
 } from "./utils";
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
@@ -139,7 +140,7 @@ function Widget() {
       return {
         type: "FORMAT",
         code: {
-          language: `${block.codeLanguage}`.toLowerCase(),
+          language: getLang(block),
           code: block.code,
         },
       };
@@ -150,7 +151,7 @@ function Widget() {
       return {
         type: "RUN",
         code: {
-          language: `${block.codeLanguage}`.toLowerCase(),
+          language: getLang(block),
           code: block.code,
         },
         inputs: io.inputs,

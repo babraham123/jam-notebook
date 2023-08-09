@@ -1,5 +1,9 @@
-import { print as subPrint, printErr as subPrintErr, anyToStr } from "../shared/utils";
-import { JS_VAR_REGEX, NULL_ID } from "../shared/constants";
+import {
+  print as subPrint,
+  printErr as subPrintErr,
+  anyToStr,
+} from "../shared/utils";
+import { JS_VAR_REGEX, PY_VAR_REGEX, NULL_ID } from "../shared/constants";
 import { metrics } from "./tokens";
 import { Code, Endpoint } from "../shared/types";
 
@@ -92,8 +96,12 @@ export function adjustFrames(blockId: string) {
   }
 
   const decls = new Set<number>();
+  const language = getLang(block);
   block.code.split("\n").forEach((line, i) => {
-    if (JS_VAR_REGEX.test(line)) {
+    if (language === "javascript" && JS_VAR_REGEX.test(line)) {
+      decls.add(i + 1);
+    }
+    if (language === "python" && PY_VAR_REGEX.test(line)) {
       decls.add(i + 1);
     }
   });
@@ -521,6 +529,10 @@ export async function loadFonts() {
   for (const style of styles) {
     await figma.loadFontAsync({ family: "Source Code Pro", style });
   }
+}
+
+export function getLang(block: CodeBlockNode): string {
+  return `${block.codeLanguage}`.toLowerCase();
 }
 
 // export function getFileId(): string {

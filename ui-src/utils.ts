@@ -2,6 +2,18 @@ import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
 import { IFrameMessage } from "../shared/types";
 import { PLUGIN_ID } from "../shared/constants";
 
+// Lets us access the execution environment from the error handler.
+export class WrappedError extends Error {
+  funcToString: string;
+
+  constructor(err: Error, func: Function) {
+    super(err.message);
+    this.name = err.name;
+    this.stack = err.stack;
+    this.funcToString = func.toString();
+  }
+}
+
 export function printErr(msg: any) {
   subPrintErr("iframe:", msg);
 }

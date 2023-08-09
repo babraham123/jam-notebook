@@ -3,19 +3,7 @@ import { js as jsBeautify } from "js-beautify";
 
 import { JS_VAR_REGEX } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
-import { getOutput, print } from "./utils";
-
-// This lets us access the execution environment from the error handler.
-export class WrappedError extends Error {
-  funcToString: string;
-
-  constructor(err: Error, func: Function) {
-    super(err.message);
-    this.name = err.name;
-    this.stack = err.stack;
-    this.funcToString = func.toString();
-  }
-}
+import { getOutput, print, WrappedError } from "./utils";
 
 // Insert Skypack imports into the user's code.
 function replaceImports(code: string): string {
@@ -126,8 +114,6 @@ export async function runJSScript(
   }
   script = replaceImports(script);
   script = `${script}\nreturn Promise.resolve();\n`;
-  print(inputVars); // TODO: remove after validating iframe runner
-  print(script);
 
   const params = inputVars.map((v) => v.altName);
   const vals = inputVars.map((v) => v.value);

@@ -1,5 +1,6 @@
 import * as std from "./std";
 import { runJSScript, formatJSScript } from "./js-runtime";
+import { runPYScript, formatPYScript } from "./py-runtime";
 import {
   IFrameMessage,
   CommandType,
@@ -59,6 +60,15 @@ async function runHandler(
           std
         );
         break;
+      case "python":
+        await runPYScript(
+          msg.code?.code ?? "",
+          msg.inputs ?? [],
+          msg.libraries ?? [],
+          msg.outputs ?? [],
+          std
+        );
+        break;
       default:
         return getErrorMsg("RUN", {
           name: "Unsupported",
@@ -68,7 +78,6 @@ async function runHandler(
     }
 
     const outputs: Endpoint[] = [];
-    print(msg.outputs); // TODO: remove after validating iframe runner
     for (const output of msg.outputs ?? []) {
       if (output.shouldReturn) {
         output.node = getOutput(output.sourceId, output.lineNum);
@@ -103,8 +112,10 @@ async function formatHandler(
     let formattedCode = msg.code?.code ?? "";
     switch (msg.code.language) {
       case "javascript":
-      case "typescript":
         formattedCode = formatJSScript(formattedCode);
+        break;
+      case "python":
+        formattedCode = formatPYScript(formattedCode);
         break;
       default:
         return getErrorMsg("FORMAT", {
