@@ -2,8 +2,9 @@ import "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.asm.js";
 // @ts-ignore
 import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.mjs";
 
+import { JAM_DEBUG } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
-import { getOutput, extractVariable } from "./utils";
+import { getOutput, extractVariable, print } from "./utils";
 
 const IMPORT_REGEX = /^\s*import\s+(?<name>[_a-zA-Z0-9]+)/;
 const FROM_REGEX = /^\s*from\s+(?<name>[_a-zA-Z0-9]+)/;
@@ -76,13 +77,18 @@ export async function runPYScript(
       );
     }
   }
-  await loadImports(script, pyodide);
+  if (JAM_DEBUG) {
+    print(pyodide.globals.toString());
+    print(script);
+  }
 
-  console.log(await pyodide.runPythonAsync(code));
+  await loadImports(script, pyodide);
+  await pyodide.runPythonAsync(code);
 
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum - 1], "python");
     // Store final result
+    // TODO: consider using altName in case var is not in global scope
     let val = pyodide.globals.get(variable.name);
     if (val?.toJs) {
       val = val.toJs();
@@ -91,14 +97,19 @@ export async function runPYScript(
   }
 }
 
-export async function formatPYScript(code: string): Promise<string> {
-  const wrappedCode = `
+const FORMAT_CODE = `
 import micropip
 micropip.install('black')
 import black
-black.format_file_contents(code, fast=True, mode=black.Mode())
-  `;
+result = black.format_file_contents(code, fast=True, mode=black.Mode())
+`;
+
+export async function formatPYScript(code: string): Promise<string> {
   const pyodide = await loadPyodide();
   pyodide.globals.set("code", code);
-  return await pyodide.runPythonAsync(wrappedCode);
+  
+  await pyodide.loadPackage("micropip");
+  await pyodide.runPythonAsync(FORMAT_CODE);
+  // Should already be a string and not need toJs()
+  return `${pyodide.globals.get("result")}`;
 }

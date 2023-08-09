@@ -173,15 +173,28 @@ function Widget() {
   async function formatHandler(
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
-    closeIFrame();
-    if (msg?.code && codeBlockId) {
-      const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
-      if (block) {
-        await loadFonts();
-        block.code = msg.code.code;
-        adjustFrames(codeBlockId);
+    if (msg?.status) {
+      if (msg.status === "SUCCESS") {
+        setResultStatus("SUCCESS");
+        if (msg?.code && codeBlockId) {
+          const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
+          if (block) {
+            await loadFonts();
+            block.code = msg.code.code;
+            adjustFrames(codeBlockId);
+          }
+        }
+      } else {
+        setResultStatus("ERROR");
+        if (msg.error) {
+          const err = msg.error.name + ": " + msg.error.message;
+          figma.notify(err);
+          console.error(err + "\n" + msg.error.stack);
+        }
       }
+      closeIFrame();
     }
+
     return undefined;
   }
 

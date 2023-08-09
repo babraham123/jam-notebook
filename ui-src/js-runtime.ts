@@ -1,8 +1,9 @@
 import parseJS from "parse-es-import";
 import { js as jsBeautify } from "js-beautify";
 
+import { JAM_DEBUG } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
-import { getOutput, Variable, extractVariable } from "./utils";
+import { getOutput, Variable, extractVariable, print } from "./utils";
 
 // Insert Skypack imports into the user's code.
 function replaceImports(code: string): string {
@@ -104,6 +105,10 @@ export async function runJSScript(
   const params = inputVars.map((v) => v.altName);
   const vals = inputVars.map((v) => v.value);
   const func = new Function("figma", ...params, script);
+  if (JAM_DEBUG) {
+    print(inputVars);
+    print(script);
+  }
 
   await func(figma, ...vals);
 }

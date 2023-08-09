@@ -3,7 +3,7 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
-export let JAM_DEBUG = false;
+export let JAM_DEBUG = true;
 
 export const PLUGIN_ID = "*"; // manifest.id; // TODO
 
