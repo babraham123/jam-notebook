@@ -71,7 +71,7 @@ function getGroup(blockId?: string): GroupNode | undefined {
   figma.currentPage
     .findAllWithCriteria({ types: ["GROUP"] })
     .forEach((node) => {
-      if (node.getPluginData("blockId") !== blockId) {
+      if (node.getPluginData("blockId") === blockId) {
         group = node as GroupNode;
       }
     });
@@ -113,7 +113,11 @@ export function adjustFrames(blockId: string) {
   });
 
   const childIds = new Set<string>();
-  group.children.forEach((child) => childIds.add(child.id));
+  group.children.forEach((child) => {
+    if (child.type === "FRAME") {
+      childIds.add(child.id);
+    }
+  });
   print([...childIds]);
 
   const existingDecls = new Set<number>();

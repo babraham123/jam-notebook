@@ -1,5 +1,6 @@
+import "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.asm.js";
 // @ts-ignore
-import { loadPyodide } from 'https://cdn.jsdelivr.net/npm/pyodide@0.23.4/+esm';
+import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.mjs";
 
 import { Code, Endpoint } from "../shared/types";
 import { getOutput, extractVariable } from "./utils";
@@ -82,7 +83,10 @@ export async function runPYScript(
   for (const endpoint of outputs) {
     const variable = extractVariable(codeLines[endpoint.lineNum - 1], "python");
     // Store final result
-    const val = pyodide.globals.get(variable.name).toJs();
+    let val = pyodide.globals.get(variable.name);
+    if (val?.toJs) {
+      val = val.toJs();
+    }
     figma.notebook.storeResult(endpoint.sourceId, endpoint.lineNum, val);
   }
 }
@@ -92,7 +96,7 @@ export async function formatPYScript(code: string): Promise<string> {
 import micropip
 micropip.install('black')
 import black
-black.format_file_contents(code, False, black.Mode())
+black.format_file_contents(code, fast=True, mode=black.Mode())
   `;
   const pyodide = await loadPyodide();
   pyodide.globals.set("code", code);
