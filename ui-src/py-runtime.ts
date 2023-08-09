@@ -1,6 +1,3 @@
-// @ts-ignore
-import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.mjs";
-
 import { Code, Endpoint } from "../shared/types";
 import { getOutput, extractVariable } from "./utils";
 
@@ -38,9 +35,10 @@ export async function runPYScript(
   outputs: Endpoint[],
   std: any
 ): Promise<void> {
-  const figma = Object.freeze({
-    notebook: Object.freeze(std),
-  });
+  const figma = {
+    notebook: std,
+  };
+  // @ts-ignore
   const pyodide = await loadPyodide();
   pyodide.registerJsModule("figma", figma);
 
@@ -94,6 +92,7 @@ micropip.install('black')
 import black
 black.format_file_contents(code, False, black.Mode())
   `;
+  // @ts-ignore
   const pyodide = await loadPyodide();
   pyodide.globals.set("code", code);
   return await pyodide.runPythonAsync(wrappedCode);
