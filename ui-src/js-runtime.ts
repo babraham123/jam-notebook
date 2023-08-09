@@ -68,7 +68,7 @@ export async function runJSScript(
     if (endpoint.node) {
       variable.value = endpoint.node;
     } else {
-      variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
+      variable.value = getOutput(endpoint.sourceId, endpoint.srcLineNum);
     }
     inputVars.push(variable);
 
@@ -79,12 +79,12 @@ export async function runJSScript(
 
   for (const endpoint of outputs) {
     const variable = extractVariable(
-      codeLines[endpoint.lineNum - 1],
+      codeLines[endpoint.srcLineNum - 1],
       "javascript"
     );
     // Store final result
     codeLines.push(
-      `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`
+      `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.srcLineNum}, ${variable.name});`
     );
   }
 

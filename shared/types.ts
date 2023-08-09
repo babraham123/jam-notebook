@@ -14,7 +14,7 @@ export interface Code {
 }
 
 export interface Endpoint {
-  lineNum: number; // 1 indexed to match UI
+  srcLineNum: number; // 1 indexed to match UI
   sourceId: string;
   destLineNum?: number;
   node?: any;
@@ -37,7 +37,7 @@ export interface IFrameMessage {
   inputs?: Endpoint[];
   libraries?: Code[];
   outputs?: Endpoint[];
-  widgetId?: string;
+  blockId?: string;
   nodeQuery?: NodeQuery;
   nodes?: any[];
   error?: ErrorLike;

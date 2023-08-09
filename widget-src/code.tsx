@@ -15,9 +15,9 @@ import * as FigmaSelector from "./vendor/figma-selector";
 import {
   addCodeBlock,
   adjustFrames,
+  exportNode,
   extractTitle,
   loadFonts,
-  parseNode,
   print,
   printErr,
   processFrames,
@@ -161,7 +161,7 @@ function Widget() {
         inputs: io.inputs,
         libraries: io.libraries,
         outputs: io.outputs,
-        widgetId,
+        blockId: codeBlockId,
       };
     }
 
@@ -192,9 +192,8 @@ function Widget() {
           console.error(err + "\n" + msg.error.stack);
         }
       }
-      closeIFrame();
     }
-
+    closeIFrame();
     return undefined;
   }
 
@@ -234,7 +233,7 @@ function Widget() {
         ? figma.currentPage
         : figma.getNodeById(id) ?? undefined;
       const nodes = FigmaSelector.parse(selector, rootNode);
-      serializedNodes = nodes.map(async (node) => await parseNode(node));
+      serializedNodes = nodes.map(async (node) => await exportNode(node));
     }
     return {
       type: "QUERY",
@@ -243,16 +242,21 @@ function Widget() {
     };
   }
 
+  function inAction(): boolean {
+    return ["RUNNING", "FORMATTING"].indexOf(resultStatus) > -1;
+  }
+
   function closeIFrame(): void {
     figma.closePlugin();
     // figma.ui.close();
-    if (resultStatus === "RUNNING" || resultStatus === "FORMATTING") {
-      // TODO: revert to last result
+
+    // Allow time for user to see results
+    setTimeout(function () {
       setResultStatus("EMPTY");
-    }
+    }, 2000);
   }
 
-  async function handlePlayBtn(): Promise<void> {
+  async function handleRunBtn(): Promise<void> {
     setResultStatus("RUNNING");
     await startIFrame();
   }
@@ -272,9 +276,6 @@ function Widget() {
 
   function startIFrame(): Promise<void> {
     return new Promise((resolve) => {
-      // const url = `${IFRAME_URL}?source=${encodeURIComponent( //@ts-expect-error
-      //   document.location.origin
-      // )}`;
       figma.showUI(`<script>window.location.href = "${IFRAME_URL}"</script>`, {
         visible: false,
         title: "Code runner",
@@ -298,8 +299,8 @@ function Widget() {
     [
       {
         itemType: "action",
-        tooltip: "Play",
-        propertyName: "play",
+        tooltip: "Run",
+        propertyName: "run",
       },
       {
         itemType: "action",
@@ -313,11 +314,9 @@ function Widget() {
       },
     ],
     async ({ propertyName, propertyValue }) => {
-      if (propertyName === "play") {
-        if (resultStatus !== "RUNNING") {
-          return await handlePlayBtn();
-        }
-      } else if (propertyName === "format") {
+      if (propertyName === "run" && resultStatus === "EMPTY") {
+        return await handleRunBtn();
+      } else if (propertyName === "format" && resultStatus === "EMPTY") {
         return await handleFormatBtn();
       } else if (propertyName === "addBlock") {
         return await handleAddBlockBtn();
@@ -364,8 +363,8 @@ function Widget() {
         ) : (
           <Button
             name="play"
-            onClick={handlePlayBtn}
-            enabled={resultStatus !== "FORMATTING"}
+            onClick={handleRunBtn}
+            enabled={!inAction()}
           ></Button>
         )}
         {resultStatus === "FORMATTING" ? (
@@ -374,7 +373,7 @@ function Widget() {
           <Button
             name="format"
             onClick={handleFormatBtn}
-            enabled={resultStatus !== "RUNNING"}
+            enabled={!inAction()}
           ></Button>
         )}
       </AutoLayout>

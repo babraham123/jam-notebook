@@ -40,7 +40,7 @@ async function ignoreHandler(
 async function runHandler(
   msg: IFrameMessage
 ): Promise<IFrameMessage | undefined> {
-  clearOutputs(msg.widgetId);
+  clearOutputs(msg.blockId);
   if (!msg.code) {
     return getErrorMsg("RUN", {
       name: "NotFound",
@@ -80,7 +80,7 @@ async function runHandler(
     const outputs: Endpoint[] = [];
     for (const output of msg.outputs ?? []) {
       if (output.shouldReturn) {
-        output.node = getOutput(output.sourceId, output.lineNum);
+        output.node = getOutput(output.sourceId, output.srcLineNum);
         outputs.push(output);
       }
     }
