@@ -33,6 +33,7 @@ async function loadImports(code: string, pyodide: any): Promise<void> {
   }
 }
 
+// Test pyodide here: https://pyodide.org/en/stable/console.html
 export async function runPYScript(
   code: string,
   inputs: Endpoint[],
@@ -99,7 +100,7 @@ export async function runPYScript(
 
 const FORMAT_CODE = `
 import micropip
-micropip.install('black')
+await micropip.install('black')
 import black
 result = black.format_file_contents(code, fast=True, mode=black.Mode())
 `;
