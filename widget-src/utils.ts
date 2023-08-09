@@ -7,7 +7,7 @@ import { JS_VAR_REGEX, PY_VAR_REGEX, NULL_ID } from "../shared/constants";
 import { metrics } from "./tokens";
 import { Code, Endpoint } from "../shared/types";
 
-const TITLE_REGEX = /\/\/\s*title:\s*(.*)/;
+const TITLE_REGEX = /(?:\/\/|#)\s*title:\s*(.*)/;
 
 export function printErr(msg: any) {
   subPrintErr("widget:", msg);
@@ -32,8 +32,9 @@ const TEXT_NODE_TYPES = [
   "EMBED",
 ];
 
-async function setTextValue(nodeId: string, value: string) {
+async function setTextValue(nodeId: string, data: any) {
   const node = figma.getNodeById(nodeId);
+  const value = anyToStr(data);
   switch (node?.type) {
     case "TEXT":
       node.characters = value;
@@ -47,6 +48,11 @@ async function setTextValue(nodeId: string, value: string) {
     case "CODE_BLOCK":
       await loadFonts();
       node.code = value;
+      if (typeof data === "object") {
+        node.codeLanguage = "JSON";
+      } else {
+        node.codeLanguage = "PLAINTEXT";
+      }
       break;
     case "LINK_UNFURL":
       node.linkUnfurlData.url = value;
@@ -289,7 +295,6 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
       if (output.lineNum !== lineNum) {
         continue;
       }
-      const value = anyToStr(output.node);
 
       for (const cNode of frame.attachedConnectors) {
         const start = cNode.connectorStart;
@@ -303,10 +308,10 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
           end.endpointNodeId &&
           end.endpointNodeId !== NULL_ID
         ) {
-          await setTextValue(end.endpointNodeId, value);
+          await setTextValue(end.endpointNodeId, output.node);
         } else {
           const node = figma.createText();
-          node.characters = value;
+          node.characters = anyToStr(output.node);
           if ("position" in end) {
             node.x = end.position.x;
             node.y = end.position.y - node.height / 2;

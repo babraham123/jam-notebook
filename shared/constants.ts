@@ -17,7 +17,7 @@ export const NULL_ID = "0:1";
 export const JS_VAR_REGEX =
   /^\s*(?<keyword>const|var|let)\s+(?<name>[$_a-zA-Z0-9]+)/;
 
-export const PY_VAR_REGEX = /^\s*(?<name>[$_a-zA-Z0-9]+)\s*=/;
+export const PY_VAR_REGEX = /^\s*(?<name>[_a-zA-Z0-9]+)\s*=/;
 
 export const FILE_ID_REGEX = /^\/file\/(?<fileId>[^/]+)\/(?<fileName>.+)$/;
 

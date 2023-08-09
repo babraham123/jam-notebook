@@ -115,7 +115,7 @@ async function formatHandler(
         formattedCode = formatJSScript(formattedCode);
         break;
       case "python":
-        formattedCode = formatPYScript(formattedCode);
+        formattedCode = await formatPYScript(formattedCode);
         break;
       default:
         return getErrorMsg("FORMAT", {

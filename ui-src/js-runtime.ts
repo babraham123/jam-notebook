@@ -1,9 +1,8 @@
 import parseJS from "parse-es-import";
 import { js as jsBeautify } from "js-beautify";
 
-import { JS_VAR_REGEX } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
-import { getOutput, print, WrappedError } from "./utils";
+import { getOutput, Variable, extractVariable } from "./utils";
 
 // Insert Skypack imports into the user's code.
 function replaceImports(code: string): string {
@@ -44,25 +43,6 @@ function replaceImports(code: string): string {
   return newCode;
 }
 
-interface Variable {
-  keyword: string;
-  name: string;
-  altName: string;
-  value?: any;
-}
-
-export function extractVariable(code: string): Variable {
-  const found = code.match(JS_VAR_REGEX);
-  if (!found || !found.groups) {
-    throw new Error(`Could not extract variable name from code: ${code}`);
-  }
-  return {
-    keyword: found.groups.keyword,
-    name: found.groups.name,
-    altName: `__${found.groups.name}__`,
-  };
-}
-
 export async function runJSScript(
   code: string,
   inputs: Endpoint[],
@@ -80,21 +60,27 @@ export async function runJSScript(
     if (!endpoint.destLineNum) {
       throw new Error(`No destination for input: ${JSON.stringify(endpoint)}`);
     }
-    const variable = extractVariable(codeLines[endpoint.destLineNum - 1]);
-    inputVars.push(variable);
-
+    const variable = extractVariable(
+      codeLines[endpoint.destLineNum - 1],
+      "javascript"
+    );
     if (endpoint.node) {
       variable.value = endpoint.node;
     } else {
       variable.value = getOutput(endpoint.sourceId, endpoint.lineNum);
     }
+    inputVars.push(variable);
+
     codeLines[
       endpoint.destLineNum - 1
     ] = `${variable.keyword} ${variable.name} = ${variable.altName};`;
   }
 
   for (const endpoint of outputs) {
-    const variable = extractVariable(codeLines[endpoint.lineNum - 1]);
+    const variable = extractVariable(
+      codeLines[endpoint.lineNum - 1],
+      "javascript"
+    );
     // Store final result
     codeLines.push(
       `figma.notebook.storeResult('${endpoint.sourceId}', ${endpoint.lineNum}, ${variable.name});`
@@ -119,12 +105,7 @@ export async function runJSScript(
   const vals = inputVars.map((v) => v.value);
   const func = new Function("figma", ...params, script);
 
-  try {
-    await func(figma, ...vals);
-  } catch (err) {
-    // Rethrow, just wrap the error with relevant information.
-    throw new WrappedError(err as Error, func);
-  }
+  await func(figma, ...vals);
 }
 
 export function formatJSScript(code: string): string {

@@ -1,18 +1,6 @@
 import { print as subPrint, printErr as subPrintErr } from "../shared/utils";
 import { IFrameMessage } from "../shared/types";
-import { PLUGIN_ID } from "../shared/constants";
-
-// Lets us access the execution environment from the error handler.
-export class WrappedError extends Error {
-  funcToString: string;
-
-  constructor(err: Error, func: Function) {
-    super(err.message);
-    this.name = err.name;
-    this.stack = err.stack;
-    this.funcToString = func.toString();
-  }
-}
+import { PLUGIN_ID, JS_VAR_REGEX, PY_VAR_REGEX } from "../shared/constants";
 
 export function printErr(msg: any) {
   subPrintErr("iframe:", msg);
@@ -86,4 +74,32 @@ export function stringToSVG(svgData: string): SVGSVGElement {
     throw new Error("No SVG elements were found.");
   }
   return svg;
+}
+
+export interface Variable {
+  keyword: string;
+  name: string;
+  altName: string;
+  value?: any;
+}
+
+export function extractVariable(code: string, lang: string): Variable {
+  let found = null;
+  switch (lang) {
+    case "javascript":
+      found = code.match(JS_VAR_REGEX);
+      break;
+    case "python":
+      found = code.match(PY_VAR_REGEX);
+      break;
+  }
+  if (!found || !found.groups) {
+    throw new Error(`Could not extract variable name from code: ${code}`);
+  }
+
+  return {
+    keyword: found.groups?.keyword ?? "",
+    name: found.groups.name,
+    altName: `__${found.groups.name}__`,
+  };
 }
