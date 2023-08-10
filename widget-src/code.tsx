@@ -13,17 +13,14 @@ const {
 
 import * as FigmaSelector from "./vendor/figma-selector";
 import {
-  addCodeBlock,
   adjustFrames,
-  exportNode,
   extractTitle,
-  loadFonts,
   print,
   printErr,
   processFrames,
   setOutputs,
-  getLang,
 } from "./utils";
+import { addCodeBlock, exportNode, getLang, loadFonts } from "./nodes";
 import { metrics, colors, badges } from "./tokens";
 import { Button } from "./components/Button";
 import { IFrameMessage, CommandType } from "../shared/types";
@@ -78,6 +75,7 @@ function Widget() {
           setCodeBlockId(block.id);
           setTitle(extractTitle(block.code));
           adjustFrames(block.id);
+          // TODO: join group?
           return;
         }
       }

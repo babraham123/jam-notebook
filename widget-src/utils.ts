@@ -3,9 +3,18 @@ import {
   printErr as subPrintErr,
   anyToStr,
 } from "../shared/utils";
-import { JS_VAR_REGEX, PY_VAR_REGEX, NULL_ID } from "../shared/constants";
-import { metrics } from "./tokens";
+import { JS_VAR_REGEX, PY_VAR_REGEX } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
+import { metrics } from "./tokens";
+import {
+  findNodesOfTypeWithBlockId,
+  setNodeValue,
+  exportNode,
+  getNodeValue,
+  getLang,
+  isConnected,
+  TEXT_NODE_TYPES,
+} from "./nodes";
 
 const TITLE_REGEX = /(?:\/\/|#)\s*title:\s*(.*)/;
 
@@ -21,46 +30,6 @@ interface FrameIO {
   inputs: Endpoint[];
   libraries: Code[];
   outputs: Endpoint[];
-}
-
-const TEXT_NODE_TYPES = [
-  "TEXT",
-  "STICKY",
-  "SHAPE_WITH_TEXT",
-  "CODE_BLOCK",
-  "LINK_UNFURL",
-  "EMBED",
-];
-
-async function setTextValue(nodeId: string, data: any) {
-  const node = figma.getNodeById(nodeId);
-  const value = anyToStr(data);
-  switch (node?.type) {
-    case "TEXT":
-      node.characters = value;
-      break;
-    case "STICKY":
-      node.text.characters = value;
-      break;
-    case "SHAPE_WITH_TEXT":
-      node.text.characters = value;
-      break;
-    case "CODE_BLOCK":
-      await loadFonts();
-      node.code = value;
-      if (typeof data === "object") {
-        node.codeLanguage = "JSON";
-      } else {
-        node.codeLanguage = "PLAINTEXT";
-      }
-      break;
-    case "LINK_UNFURL":
-      node.linkUnfurlData.url = value;
-      break;
-    case "EMBED":
-      node.embedData.srcUrl = value;
-      break;
-  }
 }
 
 function getGroup(blockId?: string): GroupNode | undefined {
@@ -138,22 +107,6 @@ function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
   frame.y = block.y + lineNum * metrics.textHeight;
 }
 
-function isConnected(endpoint: ConnectorEndpoint): boolean {
-  if (!("endpointNodeId" in endpoint)) {
-    return false;
-  }
-  if (endpoint.endpointNodeId === NULL_ID) {
-    return false;
-  }
-  if ("magnet" in endpoint && endpoint.magnet === "NONE") {
-    return false;
-  }
-  if (!figma.getNodeById(endpoint.endpointNodeId)) {
-    return false;
-  }
-  return true;
-}
-
 // adjustFrames must be called before this
 export async function processFrames(blockId: string): Promise<FrameIO> {
   const inputs: Endpoint[] = [];
@@ -224,11 +177,17 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
             continue;
           } // else fall through
         }
+        let value: any;
+        if (TEXT_NODE_TYPES.indexOf(node.type) > -1) {
+          value = getNodeValue(node);
+        } else {
+          value = await exportNode(node);
+        }
         inputs.push({
           sourceId: node.id,
           srcLineNum: 0,
           destLineNum: lineNum,
-          node: await exportNode(node),
+          node: value,
         });
         continue;
       }
@@ -296,7 +255,7 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
         }
         // Write output value
         if ("endpointNodeId" in end && isConnected(end)) {
-          await setTextValue(end.endpointNodeId, output.node);
+          await setNodeValue(end.endpointNodeId, output.node);
         } else {
           const node = figma.createText();
           node.characters = anyToStr(output.node);
@@ -330,41 +289,6 @@ export function extractTitle(code: string): string {
   return matches[1];
 }
 
-export async function addCodeBlock(
-  nodeId: string,
-  code: string,
-  lang: string
-): Promise<void> {
-  if (!nodeId) {
-    return;
-  }
-  const selection = figma.getNodeById(nodeId) as SceneNode;
-  if (!selection) {
-    return;
-  }
-  await loadFonts();
-  const block = figma.createCodeBlock();
-  block.code = code;
-  block.codeLanguage = lang.toUpperCase() as CodeBlockNode["codeLanguage"];
-  block.x = selection.x + selection.width + metrics.resultSpacing;
-  block.y = selection.y;
-  figma.currentPage.appendChild(block);
-  figma.viewport.scrollAndZoomIntoView([selection, block]);
-  figma.currentPage.selection = [block];
-}
-
-export function findNodesOfTypeWithBlockId<T extends NodeType>(
-  type: T,
-  blockId?: string
-): ({ type: T } & SceneNode)[] {
-  if (!blockId) {
-    return [];
-  }
-  return figma.currentPage
-    .findAllWithCriteria({ types: [type] })
-    .filter((node) => node.getPluginData("blockId") === blockId);
-}
-
 export type NotebookNodes = Record<string, { title: string; node: SceneNode }>;
 
 export function getNotebookNodes(): NotebookNodes {
@@ -380,28 +304,4 @@ export function getNotebookNodes(): NotebookNodes {
     modules[codeBlockId] = { title, node };
   }
   return modules;
-}
-
-export async function exportNode(node: SceneNode): Promise<any> {
-  const obj = await node.exportAsync({
-    format: "JSON_REST_V1",
-  });
-  if ("document" in obj) {
-    return obj.document;
-  }
-  return obj;
-}
-
-// TODO: Support MEDIA (png, gif) and FRAME (svg) output nodes
-// createImage -> createGif, createNodeFromSvg
-
-export async function loadFonts() {
-  const styles = ["Medium", "Medium Italic", "Regular", "Italic"];
-  for (const style of styles) {
-    await figma.loadFontAsync({ family: "Source Code Pro", style });
-  }
-}
-
-export function getLang(block: CodeBlockNode): string {
-  return `${block.codeLanguage}`.toLowerCase();
 }
