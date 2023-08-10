@@ -26,11 +26,17 @@ async function loadImports(code: string, pyodide: any): Promise<void> {
     }
   }
 
-  if (packages.size > 0) {
-    await pyodide.loadPackage("micropip");
-    const micropip = pyodide.pyimport("micropip");
-    await micropip.install([...packages]);
+  if (packages.size === 0) {
+    return;
   }
+  await pyodide.loadPackage("micropip");
+  const micropip = pyodide.pyimport("micropip");
+  const supportedPkgs = new Set<string>(micropip.list());
+  const loadPkgs = [...packages].filter((pkg) => supportedPkgs.has(pkg));
+  const installPkgs = [...packages].filter((pkg) => !supportedPkgs.has(pkg));
+
+  await pyodide.loadPackage(loadPkgs);
+  await micropip.install(installPkgs);
 }
 
 // Test pyodide here: https://pyodide.org/en/stable/console.html
