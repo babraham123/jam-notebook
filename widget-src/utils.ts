@@ -93,6 +93,7 @@ export function adjustFrames(blockId: string) {
     }
   });
 
+
   const childIds = new Set<string>();
   group.children.forEach((child) => {
     if (child.type === "FRAME") {
@@ -135,7 +136,7 @@ export function adjustFrames(blockId: string) {
 function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
   frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
   frame.x = block.x + metrics.textOffset;
-  frame.y = block.y + lineNum * metrics.textHeight;
+  frame.y = block.y + (lineNum + 1) * metrics.textHeight;
 }
 
 function isConnected(endpoint: ConnectorEndpoint): boolean {
@@ -383,11 +384,27 @@ export function getNotebookNodes(): NotebookNodes {
 }
 
 export async function exportNode(node: SceneNode): Promise<any> {
-  const obj = await node.exportAsync({
+  let obj: any = await node.exportAsync({
     format: "JSON_REST_V1",
   });
   if ("document" in obj) {
-    return obj.document;
+    obj = obj.document;
+  }
+  if (obj.type === "TABLE") {
+    // parse it into a list of lists.
+    const tableData = [];
+    let tableNode = node as TableNode;
+    for (let i = 0; i < tableNode.numRows; i++) {
+      const tableRow = [];
+      for (let j = 0; j < tableNode.numColumns; j++) {
+        const cell = tableNode.cellAt(i, j);
+        if (cell) {
+          tableRow.push(cell.text.characters);
+        }
+      }
+      tableData.push(tableRow);
+    }
+    return tableData;
   }
   return obj;
 }

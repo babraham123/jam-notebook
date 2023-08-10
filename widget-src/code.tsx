@@ -214,7 +214,7 @@ function Widget() {
       }
     }
     // Allow time for iframe to save results and send other msgs
-    setTimeout(function () {
+    setTimeout(function() {
       closeIFrame();
     }, 500);
     return undefined;
@@ -251,7 +251,7 @@ function Widget() {
     // figma.ui.close();
 
     // Allow time for user to see results
-    setTimeout(function () {
+    setTimeout(function() {
       setResultStatus("EMPTY");
     }, 2000);
   }
@@ -291,7 +291,7 @@ function Widget() {
       figma.showUI(`<script>window.open('${url}','_blank');</script>`, {
         visible: false,
       });
-      setTimeout(function () {
+      setTimeout(function() {
         figma.closePlugin();
         resolve();
       }, 1000);
