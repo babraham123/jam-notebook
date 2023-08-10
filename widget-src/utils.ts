@@ -13,6 +13,7 @@ import {
   getNodeValue,
   getLang,
   isConnected,
+  createDataNode,
   TEXT_NODE_TYPES,
 } from "./nodes";
 
@@ -257,8 +258,7 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
         if ("endpointNodeId" in end && isConnected(end)) {
           await setNodeValue(end.endpointNodeId, output.node);
         } else {
-          const node = figma.createText();
-          node.characters = anyToStr(output.node);
+          const node = await createDataNode(output.node);
           if ("position" in end) {
             node.x = end.position.x;
             node.y = end.position.y - node.height / 2;

@@ -64,6 +64,7 @@ function Widget() {
         node.stuckTo.type === "FRAME" &&
         node.stuckTo.parent?.type === "GROUP"
       ) {
+        // TODO: fix this
         group = node.stuckTo.parent;
       }
       if (node.stuckTo.type === "GROUP") {
@@ -177,7 +178,7 @@ function Widget() {
         if (msg?.code && codeBlockId) {
           const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
           if (block) {
-            await loadFonts();
+            await loadFonts("Source Code Pro");
             block.code = msg.code.code;
             adjustFrames(codeBlockId);
           }

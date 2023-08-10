@@ -12,6 +12,48 @@ export const TEXT_NODE_TYPES = [
   "TABLE",
 ];
 
+function formatTableData(data: any): any[][] | undefined {
+  const tableData = [];
+  if (Array.isArray(data)) {
+    for (const row of data) {
+      if (Array.isArray(row)) {
+        tableData.push(row.map(anyToStr));
+      } else {
+        // TODO: support list of dicts
+        return undefined;
+      }
+    }
+  } else if (data instanceof Object) {
+    const tableData = [];
+    const colKeys = Object.getOwnPropertyNames(data);
+    tableData.push(colKeys);
+    let numRows = 1;
+    for (let i = 0; i < colKeys.length; i++) {
+      const col = data[colKeys[i]];
+      if (!Array.isArray(col)) {
+        // TODO: support dict of dicts
+        return undefined;
+      }
+      if (i === 0) {
+        for (const row of col) {
+          tableData.push([anyToStr(row)]);
+        }
+        numRows = col.length + 1;
+      } else {
+        // truncate or pad rows on mismatch sizes
+        for (let j = 1; j < numRows; j++) {
+          if (j - 1 < col.length) {
+            tableData[j].push(anyToStr(col[j - 1]));
+          } else {
+            tableData[j].push("");
+          }
+        }
+      }
+    }
+  }
+  return tableData;
+}
+
 export async function setNodeValue(nodeId: string, data: any) {
   const node = figma.getNodeById(nodeId);
   const value = anyToStr(data);
@@ -26,7 +68,7 @@ export async function setNodeValue(nodeId: string, data: any) {
       node.text.characters = value;
       break;
     case "CODE_BLOCK":
-      await loadFonts();
+      await loadFonts("Source Code Pro");
       node.code = value;
       if (typeof data === "object") {
         node.codeLanguage = "JSON";
@@ -41,41 +83,10 @@ export async function setNodeValue(nodeId: string, data: any) {
       node.embedData.srcUrl = value;
       break;
     case "TABLE":
-      const tableData = [];
-      if (Array.isArray(data)) {
-        for (const row of data) {
-          if (Array.isArray(row)) {
-            tableData.push(row.map(anyToStr));
-          } else {
-            return;
-          }
-        }
-      } else if (data instanceof Object) {
-        const tableData = [];
-        const colKeys = Object.getOwnPropertyNames(data);
-        tableData.push(colKeys);
-        let numRows = 1;
-        for (let i = 0; i < colKeys.length; i++) {
-          const col = data[colKeys[i]];
-          if (!Array.isArray(col)) {
-            // TODO: support dict of dicts
-            return;
-          }
-          if (i === 0) {
-            for (const row of col) {
-              tableData.push([anyToStr(row)]);
-            }
-            numRows = col.length + 1;
-          } else {
-            for (let j = 1; j < numRows; j++) {
-              if (j - 1 < col.length) {
-                tableData[j].push(anyToStr(col[j - 1]));
-              } else {
-                tableData[j].push("");
-              }
-            }
-          }
-        }
+      await loadFonts("Inter");
+      const tableData = formatTableData(data);
+      if (!tableData) {
+        return;
       }
       // resize table
       const numRows = tableData.length;
@@ -146,6 +157,34 @@ export function getNodeValue(node: SceneNode): any {
   }
 }
 
+export async function createDataNode(data: any): Promise<SceneNode> {
+  await loadFonts("Inter");
+  let tableData = formatTableData(data);
+  if (tableData) {
+    const numRows = tableData.length;
+    if (numRows === 0) {
+      tableData = [[""]];
+    }
+    const numCols = tableData[0].length;
+    if (numCols === 0) {
+      tableData = [[""]];
+    }
+    const node = figma.createTable(numRows, numCols);
+    for (let i = 0; i < numRows; i++) {
+      for (let j = 0; j < numCols; j++) {
+        const cell = node.cellAt(i, j);
+        if (cell) {
+          cell.text.characters = anyToStr(tableData[i][j]);
+        }
+      }
+    }
+    return node;
+  }
+  const node = figma.createText();
+  node.characters = anyToStr(data);
+  return node;
+}
+
 export async function addCodeBlock(
   nodeId: string,
   code: string,
@@ -158,7 +197,7 @@ export async function addCodeBlock(
   if (!selection) {
     return;
   }
-  await loadFonts();
+  await loadFonts("Source Code Pro");
   const block = figma.createCodeBlock();
   block.code = code;
   block.codeLanguage = lang.toUpperCase() as CodeBlockNode["codeLanguage"];
@@ -194,10 +233,10 @@ export async function exportNode(node: SceneNode): Promise<any> {
 // TODO: Support MEDIA (png, gif) and FRAME (svg) output nodes
 // createImage -> createGif, createNodeFromSvg
 
-export async function loadFonts() {
-  const styles = ["Medium", "Medium Italic", "Regular", "Italic"];
+export async function loadFonts(family: string) {
+  const styles = ["Medium", "Medium Italic", "Regular", "Italic", "Bold"];
   for (const style of styles) {
-    await figma.loadFontAsync({ family: "Source Code Pro", style });
+    await figma.loadFontAsync({ family, style });
   }
 }
 
