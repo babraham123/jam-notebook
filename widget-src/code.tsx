@@ -14,6 +14,7 @@ const {
 import * as FigmaSelector from "./vendor/figma-selector";
 import {
   adjustFrames,
+  doAfter,
   extractTitle,
   print,
   printErr,
@@ -29,7 +30,7 @@ import {
   DEFAULT_TITLE,
   IFRAME_URL,
   INFO_URL,
-  JAM_DEBUG,
+  DEBUG,
 } from "../shared/constants";
 import { icons } from "../shared/icons";
 
@@ -57,38 +58,31 @@ function Widget() {
   );
 
   useStickable(() => {
-    const node = figma.getNodeById(widgetId);
-    if (node && "stuckTo" in node && node.stuckTo) {
-      let group: GroupNode | undefined;
-      if (
-        node.stuckTo.type === "FRAME" &&
-        node.stuckTo.parent?.type === "GROUP"
-      ) {
-        // TODO: fix this
-        group = node.stuckTo.parent;
+    const node = figma.getNodeById(widgetId) as WidgetNode;
+    if (!node) {
+      return;
+    }
+    if ("stuckTo" in node && node.stuckTo) {
+      let block: CodeBlockNode | undefined;
+      if (["FRAME", "GROUP"].indexOf(node.stuckTo.type) > -1) {
+        const blockId = node.stuckTo.getPluginData("blockId");
+        block = figma.getNodeById(blockId) as CodeBlockNode;
+      } else if (node.stuckTo.type === "CODE_BLOCK") {
+        block = node.stuckTo;
       }
-      if (node.stuckTo.type === "GROUP") {
-        group = node.stuckTo;
-      }
-      if (group) {
-        const block = figma.getNodeById(group.getPluginData("blockId"));
-        if (block && block.type === "CODE_BLOCK") {
-          setCodeBlockId(block.id);
-          setTitle(extractTitle(block.code));
-          adjustFrames(block.id);
-          // TODO: join group?
-          return;
-        }
-      }
-      if (node.stuckTo.type === "CODE_BLOCK") {
-        setCodeBlockId(node.stuckTo.id);
-        setTitle(extractTitle(node.stuckTo.code));
-        adjustFrames(node.stuckTo.id);
+
+      if (block) {
+        setCodeBlockId(block.id);
+        setTitle(extractTitle(block.code));
+        adjustFrames(block.id, widgetId);
         return;
       }
     }
+    // else reset
     setCodeBlockId("");
     setTitle(DEFAULT_TITLE);
+    setResultStatus("EMPTY");
+    figma.currentPage.appendChild(node);
   });
 
   const HANDLERS: Record<
@@ -108,12 +102,12 @@ function Widget() {
         return;
       }
       const msg = data as IFrameMessage;
-      if (msg.debug || JAM_DEBUG) {
+      if (msg.debug || DEBUG) {
         print(msg);
       }
       const resp = await HANDLERS[msg.type as CommandType](msg);
       if (resp) {
-        if (JAM_DEBUG) {
+        if (DEBUG) {
           resp.debug = "t";
         }
         figma.ui.postMessage(resp, { origin: IFRAME_URL });
@@ -127,14 +121,14 @@ function Widget() {
     msg: IFrameMessage
   ): Promise<IFrameMessage | undefined> {
     if (codeBlockId === "") {
-      closeIFrame();
       figma.notify("Please attached to a code block.");
+      closeIFrame();
       return undefined;
     }
     const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
     if (!block) {
-      closeIFrame();
       figma.notify("Please attached to a code block.");
+      closeIFrame();
       return undefined;
     }
 
@@ -149,7 +143,7 @@ function Widget() {
       };
     } else if (resultStatus === "RUNNING") {
       // removeOutputs(codeBlockId);
-      adjustFrames(codeBlockId);
+      adjustFrames(codeBlockId, widgetId);
       const io = await processFrames(codeBlockId);
       return {
         type: "RUN",
@@ -164,8 +158,8 @@ function Widget() {
       };
     }
 
-    closeIFrame();
     printErr(`Unexpected result status: ${resultStatus}`);
+    closeIFrame();
     return undefined;
   }
 
@@ -180,7 +174,7 @@ function Widget() {
           if (block) {
             await loadFonts("Source Code Pro");
             block.code = msg.code.code;
-            adjustFrames(codeBlockId);
+            adjustFrames(codeBlockId, widgetId);
           }
         }
       } else {
@@ -213,9 +207,7 @@ function Widget() {
       }
     }
     // Allow time for iframe to save results and send other msgs
-    setTimeout(function () {
-      closeIFrame();
-    }, 500);
+    setTimeout(closeIFrame, 500);
     return undefined;
   }
 
@@ -245,14 +237,13 @@ function Widget() {
     return ["RUNNING", "FORMATTING"].indexOf(resultStatus) > -1;
   }
 
-  function closeIFrame(): void {
-    figma.closePlugin();
-    // figma.ui.close();
-
+  function closeIFrame() {
+    figma.ui.close();
     // Allow time for user to see results
-    setTimeout(function () {
+    setTimeout(() => {
       setResultStatus("EMPTY");
-    }, 2000);
+      figma.closePlugin(); // cancels all timers, but needed to close iframe (probs due to msg handlers)
+    }, 1000);
   }
 
   async function handleRunBtn(): Promise<void> {
@@ -273,7 +264,7 @@ function Widget() {
     await addCodeBlock(id, DEFAULT_CODE.code, DEFAULT_CODE.language);
   }
 
-  function startIFrame(): Promise<void> {
+  async function startIFrame(): Promise<void> {
     return new Promise((resolve) => {
       figma.showUI(`<script>window.location.href = "${IFRAME_URL}"</script>`, {
         visible: false,
@@ -282,16 +273,11 @@ function Widget() {
     });
   }
 
-  function openLink(url: string): Promise<void> {
-    return new Promise((resolve) => {
-      figma.showUI(`<script>window.open('${url}','_blank');</script>`, {
-        visible: false,
-      });
-      setTimeout(function () {
-        figma.closePlugin();
-        resolve();
-      }, 1000);
+  async function openLink(url: string): Promise<void> {
+    figma.showUI(`<script>window.open('${url}','_blank');</script>`, {
+      visible: false,
     });
+    await doAfter(figma.closePlugin, 500);
   }
 
   usePropertyMenu(
@@ -336,7 +322,7 @@ function Widget() {
         padding={metrics.headerPadding}
         width="fill-parent"
         verticalAlignItems="start"
-        spacing={metrics.padding}
+        spacing={metrics.spacing}
       >
         <Text fontSize={16} horizontalAlignText="center">
           {title}
@@ -355,7 +341,7 @@ function Widget() {
         padding={metrics.detailPadding}
         width="fill-parent"
         verticalAlignItems="center"
-        spacing={metrics.padding}
+        spacing={metrics.spacing}
       >
         {resultStatus === "RUNNING" ? (
           <Button name="pause" onClick={closeIFrame} enabled={true}></Button>
@@ -378,7 +364,7 @@ function Widget() {
       </AutoLayout>
       {resultStatus !== "EMPTY" && (
         <AutoLayout
-          padding={metrics.buttonPadding}
+          padding={metrics.detailPadding}
           fill={badges[resultStatus].fill}
           cornerRadius={metrics.cornerRadius}
         >

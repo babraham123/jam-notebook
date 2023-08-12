@@ -38,7 +38,7 @@ function getGroup(blockId?: string): GroupNode | undefined {
   return groups.length > 0 ? groups[0] : undefined;
 }
 
-export function adjustFrames(blockId: string) {
+export function adjustFrames(blockId: string, widgetId: string) {
   if (!blockId) {
     return;
   }
@@ -100,6 +100,12 @@ export function adjustFrames(blockId: string) {
     updateFrame(frame, block, lineNum);
     group?.appendChild(frame);
   });
+  // Keep these on top
+  group.appendChild(block);
+  const widget = figma.getNodeById(widgetId) as WidgetNode;
+  if (widget) {
+    group.appendChild(widget);
+  }
 }
 
 function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
@@ -286,7 +292,11 @@ export function extractTitle(code: string): string {
   if (!matches || matches.length < 2) {
     return "Jam Notebook";
   }
-  return matches[1];
+  const title = matches[1];
+  if (title.length > 25) {
+    return title.substring(0, 25) + "...";
+  }
+  return title;
 }
 
 export type NotebookNodes = Record<string, { title: string; node: SceneNode }>;
@@ -304,4 +314,13 @@ export function getNotebookNodes(): NotebookNodes {
     modules[codeBlockId] = { title, node };
   }
   return modules;
+}
+
+export async function doAfter(f: () => void, delayMs: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(() => {
+      f();
+      resolve();
+    }, delayMs);
+  });
 }

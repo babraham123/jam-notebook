@@ -1,7 +1,7 @@
 import parseJS from "parse-es-import";
 import { js as jsBeautify } from "js-beautify";
 
-import { JAM_DEBUG } from "../shared/constants";
+import { DEBUG } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
 import { getOutput, Variable, extractVariable, print } from "./utils";
 
@@ -105,7 +105,7 @@ export async function runJSScript(
   const params = inputVars.map((v) => v.altName);
   const vals = inputVars.map((v) => v.value);
   const func = new Function("figma", ...params, script);
-  if (JAM_DEBUG) {
+  if (DEBUG) {
     print(inputVars);
     print(script);
   }

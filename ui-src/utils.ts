@@ -4,7 +4,7 @@ import {
   PLUGIN_ID,
   JS_VAR_REGEX,
   PY_VAR_REGEX,
-  JAM_DEBUG,
+  DEBUG,
 } from "../shared/constants";
 
 export function printErr(msg: any) {
@@ -19,7 +19,7 @@ export function postMessage(msg: IFrameMessage) {
   // const val = new URLSearchParams(document.location.search).get("source");
   // const source = val ? decodeURIComponent(val) : "*";
   const data = { pluginMessage: msg, pluginId: PLUGIN_ID };
-  if (JAM_DEBUG) {
+  if (DEBUG) {
     parent.postMessage(data, "*");
   } else {
     parent.postMessage(data, "https://www.figma.com");

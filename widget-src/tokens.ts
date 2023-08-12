@@ -1,24 +1,20 @@
 // Widget UI constants
 
 export const metrics = {
-  padding: 16,
-  framePadding: 32,
-  buttonPadding: { horizontal: 12, vertical: 8 },
+  spacing: 12,
+  buttonPadding: { horizontal: 10, vertical: 8 },
   headerPadding: {
     left: 8,
     right: 8,
     top: 8,
   },
-  detailPadding: { horizontal: 16, vertical: 8 },
-
-  width: 720,
-  widthName: 300,
+  detailPadding: { horizontal: 10, vertical: 8 },
 
   cornerRadius: 8,
-  resultSpacing: 64,
+  resultSpacing: 16,
 
-  iconWidth: 30,
-  iconHeight: 35,
+  iconWidth: 19,
+  iconHeight: 22,
   infoIconSize: 16,
 
   textHeight: 23,

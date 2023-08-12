@@ -2,7 +2,7 @@ import "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.asm.js";
 // @ts-ignore
 import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.mjs";
 
-import { JAM_DEBUG } from "../shared/constants";
+import { DEBUG } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
 import { getOutput, extractVariable, print } from "./utils";
 
@@ -13,13 +13,13 @@ async function loadImports(code: string, pyodide: any): Promise<void> {
   const codeLines = code.split("\n");
   const packages = new Set<string>();
   for (const line of codeLines) {
-    let found = code.match(IMPORT_REGEX);
+    let found = line.match(IMPORT_REGEX);
     if (found && found.groups) {
       packages.add(found.groups.name);
       continue;
     }
 
-    found = code.match(FROM_REGEX);
+    found = line.match(FROM_REGEX);
     if (found && found.groups) {
       packages.add(found.groups.name);
       continue;
@@ -28,6 +28,9 @@ async function loadImports(code: string, pyodide: any): Promise<void> {
 
   if (packages.size === 0) {
     return;
+  }
+  if (DEBUG) {
+    print(`Loading packages: ${JSON.stringify([...packages])}`);
   }
   await pyodide.loadPackage("micropip");
   const micropip = pyodide.pyimport("micropip");
@@ -84,7 +87,7 @@ export async function runPYScript(
       );
     }
   }
-  if (JAM_DEBUG) {
+  if (DEBUG) {
     print(pyodide.globals.toString());
     print(script);
   }

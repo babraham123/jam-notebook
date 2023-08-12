@@ -12,6 +12,7 @@ export const TEXT_NODE_TYPES = [
   "TABLE",
 ];
 
+// Formats data into a table if possible, otherwise undefined.
 function formatTableData(data: any): any[][] | undefined {
   const tableData = [];
   if (Array.isArray(data)) {
@@ -50,6 +51,15 @@ function formatTableData(data: any): any[][] | undefined {
         }
       }
     }
+  } else {
+    return undefined;
+  }
+
+  if (tableData.length === 0) {
+    return undefined;
+  }
+  if (tableData[0].length === 0) {
+    return undefined;
   }
   return tableData;
 }
@@ -161,14 +171,8 @@ export async function createDataNode(data: any): Promise<SceneNode> {
   await loadFonts("Inter");
   let tableData = formatTableData(data);
   if (tableData) {
-    const numRows = tableData.length;
-    if (numRows === 0) {
-      tableData = [[""]];
-    }
+    const numRows = tableData.length; // guaranteed to be > 0
     const numCols = tableData[0].length;
-    if (numCols === 0) {
-      tableData = [[""]];
-    }
     const node = figma.createTable(numRows, numCols);
     for (let i = 0; i < numRows; i++) {
       for (let j = 0; j < numCols; j++) {
