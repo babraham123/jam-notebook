@@ -3,7 +3,7 @@ import {
   printErr as subPrintErr,
   anyToStr,
 } from "../shared/utils";
-import { JS_VAR_REGEX, PY_VAR_REGEX } from "../shared/constants";
+import { JS_VAR_REGEX, PY_VAR_REGEX, NAMESPACE } from "../shared/constants";
 import { Code, Endpoint } from "../shared/types";
 import { metrics } from "./tokens";
 import {
@@ -49,7 +49,7 @@ export function adjustFrames(blockId: string, widgetId: string) {
   let group = getGroup(blockId);
   if (!group) {
     group = figma.group([block], figma.currentPage);
-    group.setPluginData("blockId", blockId);
+    group.setSharedPluginData(NAMESPACE, "blockId", blockId);
   }
 
   const decls = new Set<number>();
@@ -64,23 +64,27 @@ export function adjustFrames(blockId: string, widgetId: string) {
   });
 
   const childIds = new Set<string>();
-  group.children.forEach((child) => {
+  for (const child of group.children) {
     if (child.type === "FRAME") {
+      if (child.getSharedPluginData(NAMESPACE, "blockId") !== blockId) {
+        child.remove();
+        continue;
+      }
       childIds.add(child.id);
     }
-  });
+  };
 
   const existingDecls = new Set<number>();
   const frames = findNodesOfTypeWithBlockId("FRAME", blockId);
-  frames.forEach((frame) => {
-    const lineNum = parseInt(frame.getPluginData("lineNum"));
+  for (const frame of frames) {
+    const lineNum = parseInt(frame.getSharedPluginData(NAMESPACE, "lineNum"));
     if (!lineNum) {
       frame.remove();
-      return;
+      continue;
     }
     if (!decls.has(lineNum)) {
       frame.remove();
-      return;
+      continue;
     }
     if (!childIds.has(frame.id)) {
       group?.appendChild(frame);
@@ -88,18 +92,18 @@ export function adjustFrames(blockId: string, widgetId: string) {
     existingDecls.add(lineNum);
     // In case code block was moved
     updateFrame(frame, block, lineNum);
-  });
+  };
 
   const newDecls = new Set([...decls].filter((i) => !existingDecls.has(i)));
-  newDecls.forEach((lineNum) => {
+  for (const lineNum of newDecls) {
     const frame = figma.createFrame();
-    frame.setPluginData("lineNum", lineNum.toString());
-    frame.setPluginData("blockId", blockId);
+    frame.setSharedPluginData(NAMESPACE, "lineNum", lineNum.toString());
+    frame.setSharedPluginData(NAMESPACE, "blockId", blockId);
     // frame.visible = false;
     frame.fills = [];
     updateFrame(frame, block, lineNum);
     group?.appendChild(frame);
-  });
+  };
   // Keep these on top
   group.appendChild(block);
   const widget = figma.getNodeById(widgetId) as WidgetNode;
@@ -136,7 +140,7 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
   // Connectors attached to frames
   const frames = findNodesOfTypeWithBlockId("FRAME", blockId);
   for (const frame of frames) {
-    const lineNum = parseInt(frame.getPluginData("lineNum"));
+    const lineNum = parseInt(frame.getSharedPluginData(NAMESPACE, "lineNum"));
     if (!lineNum) {
       continue;
     }
@@ -173,8 +177,8 @@ export async function processFrames(blockId: string): Promise<FrameIO> {
           continue;
         }
         if (node.type === "FRAME") {
-          const sourceId = node.getPluginData("blockId");
-          const inputLineNum = node.getPluginData("lineNum");
+          const sourceId = node.getSharedPluginData(NAMESPACE, "blockId");
+          const inputLineNum = node.getSharedPluginData(NAMESPACE, "lineNum");
           if (sourceId && inputLineNum) {
             inputs.push({
               sourceId,
@@ -244,7 +248,7 @@ export async function setOutputs(blockId: string, outputs?: Endpoint[]) {
   // Connectors attached to frames
   const frames = findNodesOfTypeWithBlockId("FRAME", blockId);
   for (const frame of frames) {
-    const lineNum = parseInt(frame.getPluginData("lineNum"));
+    const lineNum = parseInt(frame.getSharedPluginData(NAMESPACE, "lineNum"));
 
     for (const output of outputs) {
       if (!output.shouldReturn) {

@@ -31,6 +31,7 @@ import {
   IFRAME_URL,
   INFO_URL,
   DEBUG,
+  NAMESPACE,
 } from "../shared/constants";
 import { icons } from "../shared/icons";
 
@@ -65,7 +66,7 @@ function Widget() {
     if ("stuckTo" in node && node.stuckTo) {
       let block: CodeBlockNode | undefined;
       if (["FRAME", "GROUP"].indexOf(node.stuckTo.type) > -1) {
-        const blockId = node.stuckTo.getPluginData("blockId");
+        const blockId = node.stuckTo.getSharedPluginData(NAMESPACE, "blockId");
         block = figma.getNodeById(blockId) as CodeBlockNode;
       } else if (node.stuckTo.type === "CODE_BLOCK") {
         block = node.stuckTo;
@@ -175,6 +176,7 @@ function Widget() {
             await loadFonts("Source Code Pro");
             block.code = msg.code.code;
             adjustFrames(codeBlockId, widgetId);
+            block.visible = false; // TODO: remove
           }
         }
       } else {

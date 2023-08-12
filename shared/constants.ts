@@ -5,6 +5,8 @@ import manifest from "../manifest.json";
 
 export let DEBUG = true;
 
+export const NAMESPACE = "jam_notebook";
+
 export const PLUGIN_ID = "*"; // manifest.id; // TODO
 
 export const IFRAME_URL =

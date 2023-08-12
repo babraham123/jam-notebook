@@ -2,7 +2,9 @@
 
 ### General
 
--
+- shared p data
+- fix frame adjustment
+- fix py imports
 
 ### Snowflake
 

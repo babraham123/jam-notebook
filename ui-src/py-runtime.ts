@@ -14,6 +14,8 @@ async function loadImports(code: string, pyodide: any): Promise<void> {
   const packages = new Set<string>();
   for (const line of codeLines) {
     let found = line.match(IMPORT_REGEX);
+    print(line);
+    print(found);
     if (found && found.groups) {
       packages.add(found.groups.name);
       continue;
@@ -114,7 +116,7 @@ const FORMAT_CODE = `
 import micropip
 await micropip.install('black')
 import black
-result = black.format_file_contents(code, fast=True, mode=black.Mode())
+result = black.format_str(code, mode=black.Mode())
 `;
 
 export async function formatPYScript(code: string): Promise<string> {

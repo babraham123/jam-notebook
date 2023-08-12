@@ -1,5 +1,5 @@
 import { anyToStr } from "../shared/utils";
-import { NULL_ID } from "../shared/constants";
+import { NULL_ID, NAMESPACE } from "../shared/constants";
 import { metrics } from "./tokens";
 
 export const TEXT_NODE_TYPES = [
@@ -221,7 +221,7 @@ export function findNodesOfTypeWithBlockId<T extends NodeType>(
   }
   return figma.currentPage
     .findAllWithCriteria({ types: [type] })
-    .filter((node) => node.getPluginData("blockId") === blockId);
+    .filter((node) => node.getSharedPluginData(NAMESPACE, "blockId") === blockId);
 }
 
 export async function exportNode(node: SceneNode): Promise<any> {
