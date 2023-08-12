@@ -176,7 +176,6 @@ function Widget() {
             await loadFonts("Source Code Pro");
             block.code = msg.code.code;
             adjustFrames(codeBlockId, widgetId);
-            block.visible = false; // TODO: remove
           }
         }
       } else {
@@ -244,7 +243,9 @@ function Widget() {
     // Allow time for user to see results
     setTimeout(() => {
       setResultStatus("EMPTY");
-      figma.closePlugin(); // cancels all timers, but needed to close iframe (probs due to msg handlers)
+      figma.closePlugin();
+      // cancels all timers, but needed to close iframe,
+      // due to hanging promise in startIFrame()
     }, 1000);
   }
 
@@ -280,6 +281,13 @@ function Widget() {
       visible: false,
     });
     await doAfter(figma.closePlugin, 500);
+  }
+
+  function toggleBlockVisibility(): void {
+    const block = figma.getNodeById(codeBlockId) as CodeBlockNode;
+    if (block) {
+      block.visible = !block.visible;
+    }
   }
 
   usePropertyMenu(
@@ -324,18 +332,10 @@ function Widget() {
         padding={metrics.headerPadding}
         width="fill-parent"
         verticalAlignItems="start"
-        spacing={metrics.spacing}
       >
         <Text fontSize={16} horizontalAlignText="center">
           {title}
-          {}
         </Text>
-        <SVG
-          src={icons["info"]}
-          width={metrics.infoIconSize}
-          height={metrics.infoIconSize}
-          onClick={async () => await openLink(INFO_URL)}
-        />
       </AutoLayout>
       <Rectangle width="fill-parent" height={1} stroke={colors.stroke} />
       <AutoLayout
@@ -363,6 +363,25 @@ function Widget() {
             enabled={!inAction()}
           ></Button>
         )}
+        <AutoLayout
+          direction="vertical"
+          height="fill-parent"
+          verticalAlignItems="center"
+          spacing={metrics.spacing}
+        >
+          <SVG
+            src={icons["info"]}
+            width={metrics.infoIconSize}
+            height={metrics.infoIconSize}
+            onClick={async () => await openLink(INFO_URL)}
+          />
+          <SVG
+            src={icons["eye"]}
+            width={metrics.infoIconSize}
+            height={metrics.infoIconSize}
+            onClick={toggleBlockVisibility}
+          />
+        </AutoLayout>
       </AutoLayout>
       {resultStatus !== "EMPTY" && (
         <AutoLayout

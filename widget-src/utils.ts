@@ -72,7 +72,7 @@ export function adjustFrames(blockId: string, widgetId: string) {
       }
       childIds.add(child.id);
     }
-  };
+  }
 
   const existingDecls = new Set<number>();
   const frames = findNodesOfTypeWithBlockId("FRAME", blockId);
@@ -92,20 +92,19 @@ export function adjustFrames(blockId: string, widgetId: string) {
     existingDecls.add(lineNum);
     // In case code block was moved
     updateFrame(frame, block, lineNum);
-  };
+  }
 
   const newDecls = new Set([...decls].filter((i) => !existingDecls.has(i)));
   for (const lineNum of newDecls) {
     const frame = figma.createFrame();
     frame.setSharedPluginData(NAMESPACE, "lineNum", lineNum.toString());
     frame.setSharedPluginData(NAMESPACE, "blockId", blockId);
-    // frame.visible = false;
     frame.fills = [];
     updateFrame(frame, block, lineNum);
     group?.appendChild(frame);
-  };
+  }
   // Keep these on top
-  group.appendChild(block);
+  // group.appendChild(block); // impedes connectors
   const widget = figma.getNodeById(widgetId) as WidgetNode;
   if (widget) {
     group.appendChild(widget);
@@ -113,8 +112,8 @@ export function adjustFrames(blockId: string, widgetId: string) {
 }
 
 function updateFrame(frame: FrameNode, block: CodeBlockNode, lineNum: number) {
-  frame.resize(block.width - 2 * metrics.textOffset, metrics.textHeight);
-  frame.x = block.x + metrics.textOffset;
+  frame.resize(block.width, metrics.textHeight);
+  frame.x = block.x;
   frame.y = block.y + lineNum * metrics.textHeight;
 }
 

@@ -221,7 +221,9 @@ export function findNodesOfTypeWithBlockId<T extends NodeType>(
   }
   return figma.currentPage
     .findAllWithCriteria({ types: [type] })
-    .filter((node) => node.getSharedPluginData(NAMESPACE, "blockId") === blockId);
+    .filter(
+      (node) => node.getSharedPluginData(NAMESPACE, "blockId") === blockId
+    );
 }
 
 export async function exportNode(node: SceneNode): Promise<any> {

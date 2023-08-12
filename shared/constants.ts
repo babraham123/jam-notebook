@@ -3,7 +3,7 @@
 import { Code } from "./types";
 import manifest from "../manifest.json";
 
-export let DEBUG = true;
+export let DEBUG = false;
 
 export const NAMESPACE = "jam_notebook";
 
@@ -14,7 +14,7 @@ export const IFRAME_URL =
 // Example test in browser:
 // window.postMessage({'pluginMessage': {'type': 'RUN', 'code': {'language': 'javascript', 'code': 'console.log("hello")'}}})
 
-export const INFO_URL = "https://github.com/babraham123/jam-notebook#readme";
+export const INFO_URL = "https://babs42.my.canva.site/jam-notebook";
 
 export const NULL_ID = "0:1";
 
